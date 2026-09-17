@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pratibha 2026-27 — House Registrations</title>
+<style>
+  :root{
+    --bg:#12141c;
+    --panel:#1a1d29;
+    --panel-2:#20232f;
+    --line:#2c3040;
+    --text:#eef0f6;
+    --muted:#9599ab;
+    --accent:#e8b04b;
+
+    --sa:#e8b04b;   /* Shadjam    - amber */
+    --ri:#e0654f;   /* Rishabham  - terracotta red */
+    --ga:#c26fd1;   /* Gandharam  - orchid */
+    --ma:#5aa8e8;   /* Madhyamam  - sky blue */
+    --pa:#4fc0a8;   /* Panchamam  - teal */
+    --dha:#7b8cf0;  /* Dhaivatam  - periwinkle */
+    --ni:#e0a5c9;   /* Nishadam   - rose */
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Iowan Old Style","Georgia",serif;
+    min-height:100vh;
+  }
+
+  header{
+    padding:2.2rem 1.5rem 1.6rem;
+    border-bottom:1px solid var(--line);
+    max-width:1100px;
+    margin:0 auto;
+  }
+  header .eyebrow{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.8rem;
+    letter-spacing:0.02em;
+    color:var(--muted);
+    margin:0 0 0.35rem;
+  }
+  h1{
+    font-size:clamp(1.6rem,3.2vw,2.3rem);
+    margin:0 0 0.3rem;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  h1 span{color:var(--accent);}
+  header p.sub{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--muted);
+    margin:0;
+    font-size:0.92rem;
+    max-width:60ch;
+  }
+
+  main{
+    max-width:1100px;
+    margin:0 auto;
+    padding:1.6rem 1.5rem 4rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+
+  #status{
+    color:var(--muted);
+    font-size:0.9rem;
+    padding:2rem 0;
+  }
+  #status.error{color:#e07a6b;}
+
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.6rem;
+    align-items:center;
+    margin-bottom:1.1rem;
+  }
+
+  .search-box{
+    flex:1 1 240px;
+    position:relative;
+  }
+  .search-box input{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.6rem 0.85rem;
+    font-size:0.95rem;
+    font-family:inherit;
+    outline:none;
+  }
+  .search-box input:focus{border-color:var(--accent);}
+  .search-box input::placeholder{color:var(--muted);}
+
+  .count-pill{
+    font-size:0.82rem;
+    color:var(--muted);
+    white-space:nowrap;
+    padding:0 0.2rem;
+  }
+
+  .house-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.45rem;
+    margin-bottom:1.4rem;
+  }
+  .house-tab{
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--text);
+    border-radius:999px;
+    padding:0.4rem 0.85rem;
+    font-size:0.85rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:0.45rem;
+    transition:border-color .15s, background .15s;
+  }
+  .house-tab .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--dot,var(--muted));
+    flex:none;
+  }
+  .house-tab .n{color:var(--muted); font-variant-numeric:tabular-nums;}
+  .house-tab:hover{border-color:var(--dot,var(--line));}
+  .house-tab.active{
+    background:var(--panel-2);
+    border-color:var(--dot,var(--accent));
+  }
+
+  .cards{
+    display:flex;
+    flex-direction:column;
+    gap:0.65rem;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--dot,var(--accent));
+    border-radius:10px;
+    padding:0.95rem 1.1rem 1.05rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.85rem;
+  }
+
+  .card-header{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:0.5rem 1rem;
+  }
+  .card-id{min-width:0;}
+  .card-id .cf-value{font-weight:600; font-size:1.02rem;}
+  .card-id .cf-label{margin-bottom:0.1rem;}
+  .card-id .regno{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.8rem;
+    color:var(--muted);
+    margin-top:0.15rem;
+  }
+
+  .house-badge{
+    flex:none;
+    display:inline-flex;
+    align-items:center;
+    gap:0.4rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.78rem;
+    font-weight:600;
+    color:var(--dot,var(--accent));
+    background:color-mix(in srgb, var(--dot,var(--accent)) 14%, transparent);
+    border:1px solid color-mix(in srgb, var(--dot,var(--accent)) 45%, transparent);
+    border-radius:999px;
+    padding:0.3rem 0.75rem;
+    white-space:nowrap;
+  }
+  .house-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--dot,var(--accent)); flex:none;}
+
+  .cf-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:0.75rem 1.1rem;
+  }
+
+  .cf{display:flex; flex-direction:column; gap:0.15rem; min-width:0;}
+  .cf-label{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.68rem;
+    color:var(--muted);
+    letter-spacing:0.01em;
+  }
+  .cf-value{font-size:0.92rem; line-height:1.4; word-break:break-word;}
+
+  .events{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.35rem;
+  }
+  .tag{
+    font-size:0.75rem;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:0.2rem 0.55rem;
+    border-radius:6px;
+    white-space:nowrap;
+  }
+  .tag.group{border-color:var(--dot,var(--line));}
+
+  .group-members{
+    font-size:0.8rem;
+    color:var(--muted);
+    white-space:pre-line;
+    margin-top:0.15rem;
+    border-top:1px dashed var(--line);
+    padding-top:0.45rem;
+  }
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    padding:3rem 0;
+    font-size:0.9rem;
+  }
+
+  .sort-select{
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    background:var(--panel) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M1 3.5L5 7.5L9 3.5' stroke='%239599ab' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 0.75rem center;
+    background-size:10px;
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.55rem 1.9rem 0.55rem 0.75rem;
+    font-size:0.82rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.2;
+    outline:none;
+    cursor:pointer;
+  }
+  .sort-select:focus{border-color:var(--accent);}
+
+  /* Quota / scrutiny panel */
+  .quota-panel{
+    border:1px solid #4a2a2a;
+    background:#241a1c;
+    border-radius:10px;
+    padding:0.9rem 1.05rem;
+    margin-bottom:1.3rem;
+  }
+  .quota-panel.clear{
+    border-color:var(--line);
+    background:var(--panel);
+  }
+  .quota-panel h2{
+    margin:0 0 0.5rem;
+    font-size:0.9rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:0.45rem;
+  }
+  .quota-panel h2 .flag-icon{color:#e0654f;}
+  .quota-panel.clear h2 .flag-icon{color:var(--muted);}
+  .quota-panel p.hint{
+    margin:0 0 0.6rem;
+    font-size:0.8rem;
+    color:var(--muted);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .quota-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:0.4rem;
+  }
+  .quota-list li{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.85rem;
+    display:flex;
+    align-items:baseline;
+    gap:0.5rem;
+    flex-wrap:wrap;
+  }
+  .quota-list .qhouse{
+    font-weight:700;
+    color:var(--dot,var(--text));
+    min-width:6.5em;
+  }
+  .quota-list .qevent{flex:1 1 auto; min-width:140px;}
+  .quota-list .qcount{
+    font-variant-numeric:tabular-nums;
+    background:#3a2224;
+    color:#f0a493;
+    border-radius:6px;
+    padding:0.1rem 0.5rem;
+    font-size:0.78rem;
+    white-space:nowrap;
+  }
+  .quota-list .excess-names{
+    flex-basis:100%;
+    font-size:0.78rem;
+    color:#e0a5a5;
+    margin-top:-0.15rem;
+    padding-left:0.2rem;
+  }
+  .quota-list .excess-names b{color:#f0a493; font-weight:600;}
+
+  .jump-link{
+    background:none;
+    border:none;
+    padding:0;
+    margin:0;
+    font:inherit;
+    color:inherit;
+    cursor:pointer;
+    text-decoration:underline;
+    text-decoration-style:dotted;
+    text-underline-offset:2px;
+  }
+  .jump-link:hover, .jump-link:focus-visible{color:var(--accent);}
+
+  .card.jump-highlight{animation:jumpHighlight 0.6s ease-in-out 3;}
+  @keyframes jumpHighlight{
+    0%{box-shadow:0 0 0 0 transparent; background:var(--panel);}
+    50%{box-shadow:0 0 10px 2px #ff1f4b, 0 0 0 2px #ff1f4b; background:rgba(255,31,75,0.14);}
+    100%{box-shadow:0 0 0 0 transparent; background:var(--panel);}
+  }
+
+  .toolbar-btn{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.55rem 0.75rem;
+    font-size:0.82rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .toolbar-btn:hover{border-color:var(--accent);}
+
+  /* Event-grouped view */
+  .event-groups{
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+  }
+  .event-group{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .event-group-header{
+    padding:0.75rem 1rem;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:0.6rem;
+    flex-wrap:wrap;
+  }
+  .event-group-header .title{
+    font-weight:600;
+    font-size:0.98rem;
+  }
+  .event-group-header .limit-note{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.75rem;
+    color:var(--muted);
+  }
+  .house-breakdown{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.4rem;
+    padding:0.65rem 1rem 0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .house-breakdown .badge{
+    font-size:0.75rem;
+    border-radius:999px;
+    padding:0.18rem 0.6rem;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .house-breakdown .badge .dot{
+    display:inline-block;
+    width:7px;height:7px;border-radius:50%;
+    background:var(--dot,var(--muted));
+    margin-right:0.35rem;
+  }
+  .house-breakdown .badge.over{
+    border-color:#7a3a3a;
+    background:#2e1c1e;
+    color:#f0a493;
+    font-weight:600;
+  }
+  .event-group-rows{
+    padding:0.7rem 1rem 0.85rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.4rem;
+  }
+  .event-row{
+    display:flex;
+    align-items:baseline;
+    gap:0.55rem;
+    font-size:0.87rem;
+    flex-wrap:wrap;
+  }
+  .event-row .er-house{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--dot,var(--muted));
+    flex:none;
+    margin-top:0.4em;
+  }
+  .event-row .er-name{font-weight:600;}
+  .event-row .er-meta{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--muted);
+    font-size:0.78rem;
+  }
+  .event-row.excess .er-name{color:#f0a493;}
+  .event-row .excess-tag{
+    font-size:0.7rem;
+    color:#f0a493;
+    background:#2e1c1e;
+    border:1px solid #7a3a3a;
+    border-radius:5px;
+    padding:0.05rem 0.4rem;
+  }
+
+  footer{
+    max-width:1100px;
+    margin:0 auto;
+    padding:1rem 1.5rem 3rem;
+    color:var(--muted);
+    font-size:0.78rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Rhythm of Sapta Swaras</p>
+  <h1>Pratibha 2026-27 <span>· House Registrations</span></h1>
+  <p class="sub">Live, read-only view of the registration sheet. Search by name, register number or batch, or select a house below. Nothing here can edit the form or the spreadsheet.</p>
+</header>
+
+<main>
+  <div id="status">Loading registrations…</div>
+
+  <div id="app" style="display:none;">
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search by name, register number or batch…">
+      </div>
+      <select class="sort-select" id="groupBySelect">
+        <option value="registrant">Sort: by registration</option>
+        <option value="event">Sort: by event</option>
+      </select>
+      <button class="toolbar-btn" id="exportCsvBtn" type="button">Export CSV</button>
+      <button class="toolbar-btn" id="printReportBtn" type="button">Print scrutiny report</button>
+      <div class="count-pill" id="countPill"></div>
+    </div>
+
+    <div class="house-tabs" id="houseTabs"></div>
+
+    <div id="quotaPanel"></div>
+    <div id="studentFlagsPanel"></div>
+    <div id="duplicatesPanel"></div>
+
+    <div class="cards" id="cards"></div>
+    <div class="event-groups" id="eventGroups" style="display:none;"></div>
+    <div class="empty" id="emptyState" style="display:none;">No matching registrations.</div>
+  </div>
+</main>
+
+<footer>
+  Data is fetched directly from the registration sheet each time this page loads. This page cannot write, edit or delete anything in the sheet. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.
+</footer>
+
+<script>
+  // ── Configure this ────────────────────────────────────────────────
+  // Paste the Apps Script Web App URL here (it ends in /exec).
+  // See Code.gs for deployment instructions.
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8LZFRyGv-XBczxLFy0OVNrA8Bpahppg_PujdDJPQVD8CsC5x3A8rBnHGCpSmpwkc2zw/exec';
+  // ─────────────────────────────────────────────────────────────────
+
+  const HOUSES = [
+    { key: 'SHADJAM',    label: 'Shadjam',    varName: '--sa'  },
+    { key: 'RISHABHAM',  label: 'Rishabham',  varName: '--ri'  },
+    { key: 'GANDHARAM',  label: 'Gandharam',  varName: '--ga'  },
+    { key: 'MADHYAMAM',  label: 'Madhyamam',  varName: '--ma'  },
+    { key: 'PANCHAMAM',  label: 'Panchamam',  varName: '--pa'  },
+    { key: 'DHAIVATAM',  label: 'Dhaivatam',  varName: '--dha' },
+    { key: 'NISHADAM',   label: 'Nishadam',   varName: '--ni'  },
+  ];
+
+  // Some responses in the raw sheet contain misspellings of the house
+  // name (e.g. "PACHAMAM" instead of "PANCHAMAM"). Normalise those here
+  // WITHOUT touching the sheet itself — this only affects how this page
+  // groups/displays the data.
+  const HOUSE_ALIASES = {
+    'PACHAMAM': 'PANCHAMAM',
+  };
+
+  function normaliseHouse(raw) {
+    const key = (raw || '').trim().toUpperCase();
+    return HOUSE_ALIASES[key] || key;
+  }
+
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // Per-house registration caps, taken from the PRATIBHA 2026-27 event
+  // guidelines (Part II registration rules + individual event rules in
+  // Part III). Events not listed here have no per-house cap (off-stage
+  // literary writing, Photography, Short Film). unit is just a label —
+  // 'participants' for individual entries, 'teams' for group entries.
+  const EVENT_LIMITS = {
+    // Individual stage/fine-art events — 2 participants per house
+    'Mono Act': { max: 2, unit: 'participants' },
+    'Mimicry': { max: 2, unit: 'participants' },
+    'Fancy dress': { max: 2, unit: 'participants' },
+    'Light Music Vocal Solo (Indian)': { max: 2, unit: 'participants' },
+    'Classical Music Solo (Vocal)': { max: 2, unit: 'participants' },
+    'Western Music Solo (Vocal)': { max: 2, unit: 'participants' },
+    'Stringed Instrument (Eastern)': { max: 2, unit: 'participants' },
+    'Stringed Instrument (Western)': { max: 2, unit: 'participants' },
+    'Wind Instrument (Eastern)': { max: 2, unit: 'participants' },
+    'Wind Instrument (Western)': { max: 2, unit: 'participants' },
+    'Percussion Instrument (Eastern)': { max: 2, unit: 'participants' },
+    'Percussion Instrument (Western)': { max: 2, unit: 'participants' },
+    'Classical Dance Solo': { max: 2, unit: 'participants' },
+    'Western Dance Solo': { max: 2, unit: 'participants' },
+
+    // On-stage literary events — 3 participants per house, per language
+    'Elocution - ENGLISH': { max: 3, unit: 'participants' },
+    'Elocution - MALAYALAM': { max: 3, unit: 'participants' },
+    'Elocution - HINDI': { max: 3, unit: 'participants' },
+    'Elocution - SANSKRIT': { max: 3, unit: 'participants' },
+    'Recitation - ENGLISH': { max: 3, unit: 'participants' },
+    'Recitation - MALAYALAM': { max: 3, unit: 'participants' },
+    'Recitation - HINDI': { max: 3, unit: 'participants' },
+    'Recitation - SANSKRIT': { max: 3, unit: 'participants' },
+    'Geetha Chanting': { max: 3, unit: 'participants' },
+
+    // Fine arts individual events — 4 participants per house
+    'Water Colouring': { max: 4, unit: 'participants' },
+    'Pencil Drawing': { max: 4, unit: 'participants' },
+    'Clay Modelling': { max: 4, unit: 'participants' },
+
+    // Fine arts team events
+    'Rangoli': { max: 1, unit: 'teams' },
+    'Mehendi Designing': { max: 2, unit: 'teams' },
+    'Collage': { max: 2, unit: 'teams' },
+
+    // On-stage group events — 2 teams per house (Debate: 1 team)
+    'Debate ( English )': { max: 1, unit: 'teams' },
+    'Mime': { max: 2, unit: 'teams' },
+    'Group song ( Indian )': { max: 2, unit: 'teams' },
+    'Group song ( Western )': { max: 2, unit: 'teams' },
+    'Group Dance ( Folk )': { max: 2, unit: 'teams' },
+    'Group Dance ( Classical/Semi-Classical/Western/Contemporary )': { max: 2, unit: 'teams' },
+  };
+
+  let allRecords = [];
+  let activeHouse = 'ALL';
+  let groupBy = 'registrant';
+
+  async function load() {
+    const statusEl = document.getElementById('status');
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0) {
+      statusEl.textContent = 'Set APPS_SCRIPT_URL near the bottom of this file to your deployed Apps Script web app URL, then reload.';
+      statusEl.classList.add('error');
+      return;
+    }
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      allRecords = data.records || [];
+      statusEl.style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      renderHouseTabs();
+      renderCards();
+    } catch (err) {
+      statusEl.textContent = 'Could not load registrations (' + err.message + '). Check that the Apps Script web app is deployed with access set to "Anyone", and that the URL above is correct.';
+      statusEl.classList.add('error');
+    }
+  }
+
+  function renderHouseTabs() {
+    const counts = { ALL: allRecords.length };
+    HOUSES.forEach(h => counts[h.key] = 0);
+    allRecords.forEach(r => {
+      const h = normaliseHouse(r.house);
+      if (counts[h] !== undefined) counts[h]++;
+    });
+
+    const wrap = document.getElementById('houseTabs');
+    wrap.innerHTML = '';
+
+    const allTab = makeTab('ALL', 'All houses', counts.ALL, null);
+    wrap.appendChild(allTab);
+
+    HOUSES.forEach(h => {
+      wrap.appendChild(makeTab(h.key, h.label, counts[h.key] || 0, h.varName));
+    });
+  }
+
+  function makeTab(key, label, count, varName) {
+    const btn = document.createElement('button');
+    btn.className = 'house-tab' + (activeHouse === key ? ' active' : '');
+    if (varName) btn.style.setProperty('--dot', 'var(' + varName + ')');
+    btn.innerHTML = '<span class="dot"></span>' + label + ' <span class="n">' + count + '</span>';
+    btn.addEventListener('click', () => {
+      activeHouse = key;
+      renderHouseTabs();
+      renderCards();
+    });
+    return btn;
+  }
+
+  function matchesSearch(r, q) {
+    if (!q) return true;
+    q = q.toLowerCase();
+    return [r.name, r.regNumber, r.batch, r.programme, r.email]
+      .some(v => (v || '').toLowerCase().includes(q));
+  }
+
+  // Tags that are NOT capped per house (off-stage literary + no-limit
+  // events). Used only to distinguish these from "capped, unlimited-looking"
+  // entries when rendering the limit note — not required for counting.
+  function collectIndividualEvents(r) {
+    const tags = new Set();
+    const simple = [
+      r.poetryWriting,
+      r.shortStoryWriting,
+      r.essayWriting,
+      r.fineArtsEvent,
+      r.elocution,
+      r.recitation,
+    ];
+    simple.forEach(v => {
+      if (v && v.trim() && v.trim().toLowerCase() !== 'not interested') {
+        v.split(',').map(s => s.trim()).filter(Boolean).forEach(item => tags.add(item));
+      }
+    });
+    if (r.shortFilm && r.shortFilm.trim().toLowerCase() === 'participating') {
+      tags.add('Short Film (Director)');
+    }
+    if (r.geethaChanting && r.geethaChanting.trim().toLowerCase() === 'participating') {
+      tags.add('Geetha Chanting');
+    }
+    if (r.individualEvents && r.individualEvents.trim()) {
+      r.individualEvents.split(',').map(s => s.trim()).filter(Boolean).forEach(item => tags.add(item));
+    }
+    return Array.from(tags);
+  }
+
+  function collectGroupEvents(r) {
+    if (!r.groupEvents || !r.groupEvents.trim()) return [];
+    return Array.from(new Set(r.groupEvents.split(',').map(s => s.trim()).filter(Boolean)));
+  }
+
+  // Every capped-or-not event tag a record carries, each flagged as
+  // group or individual (they never overlap in name).
+  function collectAllEventEntries(r) {
+    const indiv = collectIndividualEvents(r).map(tag => ({ tag, isGroup: false }));
+    const group = collectGroupEvents(r).map(tag => ({ tag, isGroup: true }));
+    return indiv.concat(group);
+  }
+
+  function parseTimestamp(ts) {
+    if (!ts) return null;
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d;
+    const m = String(ts).match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
+    if (m) return new Date(+m[3], +m[1] - 1, +m[2], +m[4], +m[5], +m[6]);
+    return null;
+  }
+
+  // Build { eventTag: { HOUSE_KEY: [{r, ts}, ...] } } across ALL records,
+  // each house's list sorted oldest-first — this lets us tell which
+  // entries were within the cap at the time they registered, and which
+  // came in after the house's cap was already full (per the guidelines'
+  // "first registered team is accepted" rule).
+  function buildQuotaDetail() {
+    const detail = {};
+    allRecords.forEach(r => {
+      const house = normaliseHouse(r.house);
+      const ts = parseTimestamp(r.timestamp);
+      collectAllEventEntries(r).forEach(({ tag }) => {
+        if (!EVENT_LIMITS[tag]) return;
+        if (!detail[tag]) detail[tag] = {};
+        if (!detail[tag][house]) detail[tag][house] = [];
+        detail[tag][house].push({ r, ts });
+      });
+    });
+    Object.keys(detail).forEach(tag => {
+      Object.keys(detail[tag]).forEach(house => {
+        detail[tag][house].sort((a, b) => {
+          if (!a.ts && !b.ts) return 0;
+          if (!a.ts) return 1;
+          if (!b.ts) return -1;
+          return a.ts - b.ts;
+        });
+      });
+    });
+    return detail;
+  }
+
+  function computeQuotaFlags() {
+    const detail = buildQuotaDetail();
+    const flags = [];
+    Object.keys(detail).forEach(tag => {
+      const limit = EVENT_LIMITS[tag];
+      Object.keys(detail[tag]).forEach(house => {
+        const list = detail[tag][house];
+        if (list.length > limit.max) {
+          flags.push({
+            house, tag, count: list.length, max: limit.max, unit: limit.unit,
+            accepted: list.slice(0, limit.max).map(e => e.r),
+            excess: list.slice(limit.max).map(e => e.r),
+          });
+        }
+      });
+    });
+    flags.sort((a, b) => a.house.localeCompare(b.house) || a.tag.localeCompare(b.tag));
+    return flags;
+  }
+
+  // key used to look up whether a given (record, event tag) pair is the
+  // "excess" (over-cap, by submission order) part of a quota breach.
+  function excessKeyOf(tag, r) {
+    return tag + '|' + (r.regNumber || r.email || r.name);
+  }
+  function buildExcessKeySet(flags) {
+    const set = new Set();
+    flags.forEach(f => f.excess.forEach(r => set.add(excessKeyOf(f.tag, r))));
+    return set;
+  }
+
+  // Rules not tied to a specific event: max 5 events per student
+  // (Short Film is explicitly excluded from this cap), and max 2
+  // on-stage group events per student.
+  function computeStudentFlags() {
+    const flags = [];
+    allRecords.forEach(r => {
+      const entries = collectAllEventEntries(r);
+      const cappedCount = entries.filter(e => e.tag !== 'Short Film (Director)').length;
+      const groupCount = entries.filter(e => e.isGroup).length;
+      const issues = [];
+      if (cappedCount > 5) issues.push(cappedCount + ' events registered (max 5, Short Film excluded)');
+      if (groupCount > 2) issues.push(groupCount + ' on-stage group events (max 2)');
+      if (issues.length) flags.push({ r, house: normaliseHouse(r.house), issues });
+    });
+    flags.sort((a, b) => a.house.localeCompare(b.house) || (a.r.name || '').localeCompare(b.r.name || ''));
+    return flags;
+  }
+
+  // Same register number or email appearing on more than one row — the
+  // guidelines call this grounds for disqualification on its own.
+  function computeDuplicateFlags() {
+    const byReg = {}, byEmail = {};
+    allRecords.forEach(r => {
+      const reg = (r.regNumber || '').trim().toUpperCase();
+      const email = (r.email || '').trim().toLowerCase();
+      if (reg) (byReg[reg] = byReg[reg] || []).push(r);
+      if (email) (byEmail[email] = byEmail[email] || []).push(r);
+    });
+    const dupes = [];
+    Object.keys(byReg).forEach(k => { if (byReg[k].length > 1) dupes.push({ type: 'Register Number', value: k, records: byReg[k] }); });
+    Object.keys(byEmail).forEach(k => { if (byEmail[k].length > 1) dupes.push({ type: 'Email', value: k, records: byEmail[k] }); });
+    return dupes;
+  }
+
+  function renderQuotaPanel() {
+    const allFlags = computeQuotaFlags();
+    const flags = activeHouse === 'ALL' ? allFlags : allFlags.filter(f => f.house === activeHouse);
+    const panel = document.getElementById('quotaPanel');
+
+    if (flags.length === 0) {
+      panel.innerHTML = `
+        <div class="quota-panel clear">
+          <h2><span class="flag-icon">●</span> No quota breaches${activeHouse === 'ALL' ? '' : ' for ' + escapeHtml(houseLabel(activeHouse))}</h2>
+          <p class="hint">Checked against every per-house event cap in the PRATIBHA 2026-27 guidelines${activeHouse === 'ALL' ? ' across all seven houses.' : '.'}</p>
+        </div>`;
+      return;
+    }
+
+    panel.innerHTML = `
+      <div class="quota-panel">
+        <h2><span class="flag-icon">⚑</span> ${flags.length} quota breach${flags.length === 1 ? '' : 'es'}${activeHouse === 'ALL' ? ' across all houses' : ' — ' + escapeHtml(houseLabel(activeHouse))}</h2>
+        <p class="hint">"Excess" names are whoever registered after the house's cap for that event was already reached, in submission order — cross-check before acting.</p>
+        <ul class="quota-list">
+          ${flags.map(f => `
+            <li>
+              <span class="qhouse" style="--dot:var(${houseVar(f.house)})">${escapeHtml(houseLabel(f.house))}</span>
+              <span class="qevent">${escapeHtml(f.tag)}</span>
+              <span class="qcount">${f.count} / ${f.max} ${f.unit}</span>
+              <span class="excess-names"><b>Excess:</b> ${f.excess.map(r => `<button type="button" class="jump-link" data-key="${escapeAttr(recordKey(r))}">${escapeHtml((r.name || '—') + ' (' + (r.regNumber || 'no reg no.') + ')')}</button>`).join(', ')}</span>
+            </li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  function renderStudentFlagsPanel() {
+    const all = computeStudentFlags();
+    const flags = activeHouse === 'ALL' ? all : all.filter(f => f.house === activeHouse);
+    const panel = document.getElementById('studentFlagsPanel');
+    if (flags.length === 0) {
+      panel.innerHTML = '';
+      return;
+    }
+    panel.innerHTML = `
+      <div class="quota-panel">
+        <h2><span class="flag-icon">⚑</span> ${flags.length} student-level limit flag${flags.length === 1 ? '' : 's'}</h2>
+        <p class="hint">Per-student caps from the registration rules: max 5 events total (Short Film excluded), max 2 on-stage group events.</p>
+        <ul class="quota-list">
+          ${flags.map(f => `
+            <li>
+              <span class="qhouse" style="--dot:var(${houseVar(f.house)})">${escapeHtml(houseLabel(f.house))}</span>
+              <span class="qevent"><button type="button" class="jump-link" data-key="${escapeAttr(recordKey(f.r))}">${escapeHtml(f.r.name || '—')} <span style="color:var(--muted);font-size:0.8em;">(${escapeHtml(f.r.regNumber || '')})</span></button></span>
+              <span class="excess-names">${f.issues.map(escapeHtml).join(' · ')}</span>
+            </li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  function renderDuplicatesPanel() {
+    const dupes = computeDuplicateFlags();
+    const panel = document.getElementById('duplicatesPanel');
+    const filteredDupes = activeHouse === 'ALL' ? dupes : dupes
+      .map(d => ({ ...d, records: d.records.filter(r => normaliseHouse(r.house) === activeHouse) }))
+      .filter(d => d.records.length > 1);
+    if (filteredDupes.length === 0) {
+      panel.innerHTML = '';
+      return;
+    }
+    panel.innerHTML = `
+      <div class="quota-panel">
+        <h2><span class="flag-icon">⚑</span> ${filteredDupes.length} duplicate entry group${filteredDupes.length === 1 ? '' : 's'}</h2>
+        <p class="hint">Same register number or email submitted more than once — the guidelines treat multiple entries as grounds for disqualification.</p>
+        <ul class="quota-list">
+          ${filteredDupes.map(d => `
+            <li>
+              <span class="qhouse">${escapeHtml(d.type)}</span>
+              <span class="qevent">${escapeHtml(d.value)}</span>
+              <span class="excess-names">${d.records.map(r => `<button type="button" class="jump-link" data-key="${escapeAttr(recordKey(r))}">${escapeHtml((r.name || '—') + ' — ' + houseLabel(normaliseHouse(r.house)))}</button>`).join(', ')}</span>
+            </li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  function houseLabel(key) {
+    const h = HOUSES.find(h => h.key === key);
+    return h ? h.label : key;
+  }
+  function houseVar(key) {
+    const h = HOUSES.find(h => h.key === key);
+    return h ? h.varName : '--muted';
+  }
+
+  function formatTimestamp(ts) {
+    const d = parseTimestamp(ts);
+    if (!d) return ts || '—';
+    return d.toLocaleString(undefined, {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
+
+  function renderCards() {
+    renderQuotaPanel();
+    renderStudentFlagsPanel();
+    renderDuplicatesPanel();
+
+    const q = document.getElementById('searchInput').value.trim();
+    const filtered = allRecords.filter(r => {
+      const houseOk = activeHouse === 'ALL' || normaliseHouse(r.house) === activeHouse;
+      return houseOk && matchesSearch(r, q);
+    });
+
+    document.getElementById('countPill').textContent =
+      filtered.length + (filtered.length === 1 ? ' registration' : ' registrations');
+
+    const cardsEl = document.getElementById('cards');
+    const eventsEl = document.getElementById('eventGroups');
+    document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
+
+    if (groupBy === 'event') {
+      cardsEl.style.display = 'none';
+      eventsEl.style.display = filtered.length ? 'flex' : 'none';
+      cardsEl.innerHTML = '';
+      renderEventGroups(filtered);
+      return;
+    }
+
+    eventsEl.style.display = 'none';
+    eventsEl.innerHTML = '';
+    cardsEl.style.display = filtered.length ? 'flex' : 'none';
+    const container = cardsEl;
+    container.innerHTML = '';
+
+    filtered.forEach(r => {
+      const houseKey = normaliseHouse(r.house);
+      const houseDef = HOUSES.find(h => h.key === houseKey);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.key = recordKey(r);
+      if (houseDef) card.style.setProperty('--dot', 'var(' + houseDef.varName + ')');
+
+      const indivTags = collectIndividualEvents(r);
+      const groupTags = collectGroupEvents(r);
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="cf card-id">
+            <span class="cf-label">Name</span>
+            <span class="cf-value">${escapeHtml(r.name || '(no name)')}</span>
+            <span class="regno">${escapeHtml(r.regNumber || 'No registration no.')}</span>
+          </div>
+          <span class="house-badge"><span class="dot"></span>${escapeHtml(houseDef ? houseDef.label : (r.house || '—'))}</span>
+        </div>
+        <div class="cf-grid">
+          <div class="cf">
+            <span class="cf-label">Course</span>
+            <span class="cf-value">${escapeHtml(r.programme || '—')}</span>
+          </div>
+          <div class="cf">
+            <span class="cf-label">Batch</span>
+            <span class="cf-value">${escapeHtml(r.batch || '—')}</span>
+          </div>
+          <div class="cf">
+            <span class="cf-label">Phone number</span>
+            <span class="cf-value">${escapeHtml(r.whatsapp || '—')}</span>
+          </div>
+          <div class="cf">
+            <span class="cf-label">Gender</span>
+            <span class="cf-value">${escapeHtml(r.gender || '—')}</span>
+          </div>
+          <div class="cf">
+            <span class="cf-label">Date & time of registration</span>
+            <span class="cf-value">${escapeHtml(formatTimestamp(r.timestamp))}</span>
+          </div>
+        </div>
+        ${(indivTags.length || groupTags.length) ? `<div class="events">
+          ${indivTags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+          ${groupTags.map(t => `<span class="tag group">${escapeHtml(t)} (group)</span>`).join('')}
+        </div>` : ''}
+        ${r.groupMembers && r.groupMembers.trim() ? `<div class="group-members">${escapeHtml(r.groupMembers.trim())}</div>` : ''}
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function renderEventGroups(filtered) {
+    const excessKeys = buildExcessKeySet(computeQuotaFlags());
+
+    // eventTag -> { houses: {HOUSE: count}, entries: [{r, house, isGroup}] }
+    const byEvent = {};
+    filtered.forEach(r => {
+      const house = normaliseHouse(r.house);
+      collectAllEventEntries(r).forEach(({ tag, isGroup }) => {
+        if (!byEvent[tag]) byEvent[tag] = { houses: {}, entries: [] };
+        byEvent[tag].houses[house] = (byEvent[tag].houses[house] || 0) + 1;
+        byEvent[tag].entries.push({ r, house, isGroup });
+      });
+    });
+
+    const eventNames = Object.keys(byEvent).sort((a, b) => a.localeCompare(b));
+    const container = document.getElementById('eventGroups');
+    container.innerHTML = '';
+
+    eventNames.forEach(tag => {
+      const data = byEvent[tag];
+      const limit = EVENT_LIMITS[tag];
+      const section = document.createElement('div');
+      section.className = 'event-group';
+
+      const limitNote = limit ? `max ${limit.max} ${limit.unit} per house` : 'no per-house cap';
+
+      const houseBadges = Object.keys(data.houses)
+        .sort((a, b) => a.localeCompare(b))
+        .map(house => {
+          const count = data.houses[house];
+          const over = limit && count > limit.max;
+          return `<span class="badge${over ? ' over' : ''}" style="--dot:var(${houseVar(house)})">
+            <span class="dot"></span>${escapeHtml(houseLabel(house))}: ${count}${limit ? ' / ' + limit.max : ''}
+          </span>`;
+        }).join('');
+
+      const rows = data.entries
+        .sort((a, b) => a.r.name.localeCompare(b.r.name))
+        .map(({ r, house, isGroup }) => {
+          const isExcess = excessKeys.has(excessKeyOf(tag, r));
+          return `
+          <div class="event-row${isExcess ? ' excess' : ''}">
+            <span class="er-house" style="--dot:var(${houseVar(house)})"></span>
+            <span class="er-name">${escapeHtml(r.name || '(no name)')}</span>
+            <span class="er-meta">${escapeHtml(r.regNumber || '')} · ${escapeHtml(r.batch || '')} · ${escapeHtml(houseLabel(house))}${isGroup ? ' · team leader' : ''} · ${escapeHtml(formatTimestamp(r.timestamp))}</span>
+            ${isExcess ? '<span class="excess-tag">over cap — later entry</span>' : ''}
+          </div>`;
+        }).join('');
+
+      section.innerHTML = `
+        <div class="event-group-header">
+          <span class="title">${escapeHtml(tag)}</span>
+          <span class="limit-note">${limitNote}</span>
+        </div>
+        <div class="house-breakdown">${houseBadges}</div>
+        <div class="event-group-rows">${rows}</div>
+      `;
+      container.appendChild(section);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function escapeAttr(str) {
+    return escapeHtml(str).replace(/"/g, '&quot;');
+  }
+
+  // Stable identifier for a record, used to link a name mentioned in the
+  // scrutiny panels back to its full registration card.
+  function recordKey(r) {
+    return ((r.regNumber && r.regNumber.trim())
+      || (r.email && r.email.trim())
+      || (r.name && r.name.trim())
+      || '');
+  }
+
+  // Bring a specific registration's card into view (switching out of
+  // event-grouping and clearing any house filter / search that would
+  // otherwise hide it), then briefly highlight it.
+  function goToRecord(key) {
+    if (!key) return;
+    let needsRerender = false;
+    if (groupBy !== 'registrant') {
+      groupBy = 'registrant';
+      const sel = document.getElementById('groupBySelect');
+      if (sel) sel.value = 'registrant';
+      needsRerender = true;
+    }
+    if (activeHouse !== 'ALL') {
+      activeHouse = 'ALL';
+      needsRerender = true;
+    }
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.trim()) {
+      searchInput.value = '';
+      needsRerender = true;
+    }
+    if (needsRerender) {
+      renderHouseTabs();
+      renderCards();
+    }
+    requestAnimationFrame(() => {
+      const target = document.querySelector('.card[data-key="' + CSS.escape(key) + '"]');
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      waitForScrollEnd(() => {
+        target.classList.remove('jump-highlight');
+        void target.offsetWidth; // restart the animation if the same card is clicked again
+        target.classList.add('jump-highlight');
+        target.addEventListener('animationend', () => target.classList.remove('jump-highlight'), { once: true });
+      });
+    });
+  }
+
+  // Waits for the smooth-scroll triggered above to actually settle before
+  // starting the highlight, so the glow lands once the card is in view
+  // rather than partway through the scroll. Falls back to a fixed delay
+  // on browsers that don't support the 'scrollend' event.
+  function waitForScrollEnd(cb) {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('scrollend', finish);
+      cb();
+    };
+    window.addEventListener('scrollend', finish, { once: true });
+    setTimeout(finish, 600);
+  }
+
+  function toCSV(rows, headers) {
+    const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const lines = [headers.map(esc).join(',')];
+    rows.forEach(row => lines.push(headers.map(h => esc(row[h])).join(',')));
+    return lines.join('\r\n');
+  }
+
+  function downloadBlob(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportFilteredCSV() {
+    const q = document.getElementById('searchInput').value.trim();
+    const filtered = allRecords.filter(r => {
+      const houseOk = activeHouse === 'ALL' || normaliseHouse(r.house) === activeHouse;
+      return houseOk && matchesSearch(r, q);
+    });
+    const headers = ['Name', 'RegNumber', 'Batch', 'Programme', 'House', 'Gender', 'WhatsApp', 'IndividualEvents', 'GroupEvents', 'GroupMembers'];
+    const rows = filtered.map(r => ({
+      Name: r.name, RegNumber: r.regNumber, Batch: r.batch, Programme: r.programme,
+      House: houseLabel(normaliseHouse(r.house)), Gender: r.gender, WhatsApp: r.whatsapp,
+      IndividualEvents: collectIndividualEvents(r).join('; '),
+      GroupEvents: collectGroupEvents(r).join('; '),
+      GroupMembers: r.groupMembers,
+    }));
+    const suffix = (activeHouse === 'ALL' ? 'all-houses' : activeHouse.toLowerCase()) + (q ? '-filtered' : '');
+    downloadBlob(toCSV(rows, headers), `pratibha-registrations-${suffix}.csv`, 'text/csv');
+  }
+
+  function printScrutinyReport() {
+    const quota = computeQuotaFlags();
+    const students = computeStudentFlags();
+    const dupes = computeDuplicateFlags();
+
+    const esc = escapeHtml;
+    let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pratibha 2026-27 — Scrutiny Report</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;color:#111;padding:28px;}
+        h1{font-size:19px;margin:0 0 2px;}
+        .muted{color:#666;font-size:11px;margin:0 0 20px;}
+        h2{font-size:14px;margin-top:26px;border-bottom:1px solid #ccc;padding-bottom:4px;}
+        table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px;}
+        th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top;}
+        th{background:#f0f0f0;}
+        .none{color:#666;font-size:11.5px;margin-top:8px;}
+        @media print{ a{color:inherit;text-decoration:none;} }
+      </style></head><body>
+      <h1>Pratibha 2026-27 — Scrutiny Report</h1>
+      <p class="muted">Generated ${esc(new Date().toLocaleString())} from the live registration sheet. Read-only audit — does not reflect any merges or cancellations coordinators may have already made.</p>
+
+      <h2>Quota breaches (${quota.length})</h2>
+      ${quota.length ? `<table><tr><th>House</th><th>Event</th><th>Count / Cap</th><th>Excess registrations (submission order)</th></tr>
+        ${quota.map(f => `<tr><td>${esc(houseLabel(f.house))}</td><td>${esc(f.tag)}</td><td>${f.count} / ${f.max} ${esc(f.unit)}</td><td>${f.excess.map(r => esc((r.name || '—') + ' (' + (r.regNumber || 'no reg no.') + ')')).join('<br>')}</td></tr>`).join('')}
+        </table>` : `<p class="none">None found.</p>`}
+
+      <h2>Student-level limit flags (${students.length})</h2>
+      ${students.length ? `<table><tr><th>Name</th><th>Reg No.</th><th>House</th><th>Issue</th></tr>
+        ${students.map(f => `<tr><td>${esc(f.r.name)}</td><td>${esc(f.r.regNumber)}</td><td>${esc(houseLabel(f.house))}</td><td>${f.issues.map(esc).join('<br>')}</td></tr>`).join('')}
+        </table>` : `<p class="none">None found.</p>`}
+
+      <h2>Duplicate entries (${dupes.length})</h2>
+      ${dupes.length ? `<table><tr><th>Matched on</th><th>Value</th><th>Registrations</th></tr>
+        ${dupes.map(d => `<tr><td>${esc(d.type)}</td><td>${esc(d.value)}</td><td>${d.records.map(r => esc((r.name || '—') + ' — ' + (r.regNumber || '') + ' — ' + houseLabel(normaliseHouse(r.house)))).join('<br>')}</td></tr>`).join('')}
+        </table>` : `<p class="none">None found.</p>`}
+      </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) {
+      alert('Please allow pop-ups for this page to open the printable report.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.jump-link');
+    if (!btn) return;
+    e.preventDefault();
+    goToRecord(btn.dataset.key);
+  });
+
+  document.getElementById('searchInput').addEventListener('input', renderCards);
+  document.getElementById('groupBySelect').addEventListener('change', (e) => {
+    groupBy = e.target.value;
+    renderCards();
+  });
+  document.getElementById('exportCsvBtn').addEventListener('click', exportFilteredCSV);
+  document.getElementById('printReportBtn').addEventListener('click', printScrutinyReport);
+
+  load();
+</script>
+
+</body>
+</html>
