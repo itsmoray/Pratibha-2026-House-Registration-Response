@@ -38,6 +38,31 @@
     max-width:1100px;
     margin:0 auto;
   }
+  .header-top{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+  }
+  .header-copy{min-width:0; flex:1 1 380px;}
+  .guidelines-btn{
+    flex:none;
+    display:inline-flex;
+    align-items:center;
+    gap:0.45rem;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.6rem 0.9rem;
+    font-size:0.85rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .guidelines-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .guidelines-btn .gb-icon{font-size:1rem; line-height:1;}
   header .eyebrow{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     font-size:0.8rem;
@@ -490,15 +515,652 @@
     font-size:0.78rem;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   }
+
+  /* Guidelines modal */
+  .gl-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(8,9,13,0.72);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:3.2vh 1rem;
+    z-index:100;
+    overflow-y:auto;
+  }
+  .gl-overlay.open{display:flex;}
+  .gl-modal{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    max-width:840px;
+    width:100%;
+    max-height:93vh;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  .gl-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+    padding:1.2rem 1.4rem 1rem;
+    border-bottom:1px solid var(--line);
+    flex:none;
+  }
+  .gl-header h2{
+    margin:0 0 0.2rem;
+    font-size:1.25rem;
+    font-weight:600;
+  }
+  .gl-header p{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--muted);
+    font-size:0.82rem;
+  }
+  .gl-close{
+    flex:none;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    width:2.1rem;
+    height:2.1rem;
+    border-radius:50%;
+    font-size:1.05rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .gl-close:hover{border-color:var(--accent); color:var(--accent);}
+
+  .gl-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:0.6rem;
+    padding:0.9rem 1.4rem;
+    border-bottom:1px solid var(--line);
+    flex:none;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .gl-toolbar input{
+    flex:1 1 200px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.5rem 0.75rem;
+    font-size:0.85rem;
+    font-family:inherit;
+    outline:none;
+  }
+  .gl-toolbar input:focus{border-color:var(--accent);}
+  .gl-toolbar button{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.5rem 0.7rem;
+    font-size:0.78rem;
+    font-family:inherit;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .gl-toolbar button:hover{border-color:var(--accent);}
+
+  .gl-body{
+    overflow-y:auto;
+    padding:1.1rem 1.4rem 2rem;
+  }
+  .gl-body h3.gl-part{
+    font-size:0.78rem;
+    letter-spacing:0.03em;
+    color:var(--accent);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    margin:1.6rem 0 0.6rem;
+    border-top:1px dashed var(--line);
+    padding-top:1.2rem;
+  }
+  .gl-body > .gl-toplevel:first-child h3.gl-part{border-top:none; padding-top:0; margin-top:0;}
+  .gl-body ul{margin:0.3rem 0 0.7rem; padding-left:1.2rem;}
+  .gl-body li{margin:0.15rem 0; font-size:0.9rem; line-height:1.5;}
+  .gl-body p{font-size:0.9rem; line-height:1.55; margin:0.4rem 0;}
+  .gl-body a{color:var(--accent);}
+
+  .gl-table{
+    width:100%;
+    border-collapse:collapse;
+    margin:0.5rem 0 1rem;
+    font-size:0.85rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .gl-table th, .gl-table td{
+    border:1px solid var(--line);
+    padding:0.45rem 0.6rem;
+    text-align:left;
+    vertical-align:top;
+  }
+  .gl-table th{background:var(--panel-2); color:var(--muted); font-weight:600;}
+
+  details.gl-section{
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-bottom:0.6rem;
+    background:var(--panel-2);
+    overflow:hidden;
+  }
+  details.gl-section > summary{
+    cursor:pointer;
+    padding:0.75rem 1rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-weight:600;
+    font-size:0.9rem;
+    list-style:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:0.6rem;
+  }
+  details.gl-section > summary::-webkit-details-marker{display:none;}
+  details.gl-section > summary::after{
+    content:'+';
+    color:var(--muted);
+    font-size:1.1rem;
+    flex:none;
+  }
+  details.gl-section[open] > summary::after{content:'–';}
+  details.gl-section .gl-section-body{padding:0.2rem 1.1rem 1rem;}
+
+  .gl-event{
+    padding:0.65rem 0;
+    border-top:1px dashed var(--line);
+  }
+  .gl-event:first-child{border-top:none;}
+  .gl-event h4{
+    margin:0 0 0.3rem;
+    font-size:0.92rem;
+    font-weight:600;
+  }
+  .gl-event h4 .gl-code{
+    color:var(--accent);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.75rem;
+    font-weight:600;
+    margin-right:0.4rem;
+  }
+
+  .gl-event.gl-hidden, details.gl-section.gl-hidden{display:none;}
+
+  @media (max-width:600px){
+    .gl-overlay{padding:0;}
+    .gl-modal{max-width:none; width:100%; height:100%; max-height:none; border-radius:0;}
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <p class="eyebrow">Rhythm of Sapta Swaras</p>
-  <h1>Pratibha 2026-27 <span>· House Registrations</span></h1>
-  <p class="sub">Live, read-only view of the registration sheet. Search by name, register number or batch, or select a house below. Nothing here can edit the form or the spreadsheet.</p>
+  <div class="header-top">
+    <div class="header-copy">
+      <p class="eyebrow">Rhythm of Sapta Swaras</p>
+      <h1>Pratibha 2026-27 <span>· House Registrations</span></h1>
+      <p class="sub">Live, read-only view of the registration sheet. Search by name, register number or batch, or select a house below. Nothing here can edit the form or the spreadsheet.</p>
+    </div>
+    <button type="button" class="guidelines-btn" id="guidelinesBtn">
+      <span class="gb-icon">📖</span> Event guidelines
+    </button>
+  </div>
 </header>
+
+<div class="gl-overlay" id="guidelinesOverlay">
+  <div class="gl-modal" role="dialog" aria-modal="true" aria-labelledby="glTitle">
+    <div class="gl-header">
+      <div>
+        <h2 id="glTitle">PRATIBHA 2026-27 — Event Guidelines</h2>
+        <p>The Rhythm of Sapta Swaras · Rules for all competitive events</p>
+      </div>
+      <button type="button" class="gl-close" id="guidelinesClose" aria-label="Close guidelines">✕</button>
+    </div>
+    <div class="gl-toolbar">
+      <input type="text" id="glSearch" placeholder="Search an event, e.g. &quot;mehendi&quot; or &quot;PAF 04&quot;…">
+      <button type="button" id="glExpandAll">Expand all</button>
+      <button type="button" id="glCollapseAll">Collapse all</button>
+    </div>
+    <div class="gl-body" id="glBody">
+
+      <div class="gl-toplevel">
+      <h3 class="gl-part">Part I · General rules</h3>
+      <p>All participants must register for their respective events only through the official registration link: <a href="https://forms.gle/qKwLwoWtCHyBSnDNA" target="_blank" rel="noopener">forms.gle/qKwLwoWtCHyBSnDNA</a> (log in using your official CVV email to access it).</p>
+
+      <table class="gl-table">
+        <thead><tr><th>Group / House</th><th>Name</th><th>Programmes</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Shadjam</td><td>BTech CSE — (S1, S3, S5, S7)</td></tr>
+          <tr><td>2</td><td>Rishabham</td><td>BTech AIML — (S1, S3, S5, S7), BTech DS-CY — (S3)</td></tr>
+          <tr><td>3</td><td>Gandharam</td><td>BTech DS (S1, S5), BTech CY (S1, S5), BSc AP, BSc BEd, BA BEd, BA Sanskrit, MA Sanskrit</td></tr>
+          <tr><td>4</td><td>Madhyamam</td><td>BBA — (S1, S3, S5), BTech ECE — (S1, S3, S5), BSc CS — (S5)</td></tr>
+          <tr><td>5</td><td>Pachamam</td><td>BCA — (S3 &amp; S1), MBA — (S1, S3)</td></tr>
+          <tr><td>6</td><td>Dhaivatam</td><td>BCA — (S5) &amp; BCom — (S5)</td></tr>
+          <tr><td>7</td><td>Nishadam</td><td>BCom, BBA, BSc. AP, MSc. AP, MSc CP — PP campus</td></tr>
+        </tbody>
+      </table>
+
+      <ul>
+        <li>No spot entries will be permitted for individual or group events under any circumstances.</li>
+        <li><b>Conduct:</b> participants must maintain decorum throughout the event. Misconduct may lead to immediate disqualification of the individual or the entire team.</li>
+        <li><b>Reporting:</b> participants must report to the venue at least 30 minutes before their event's scheduled start. Latecomers risk disqualification.</li>
+        <li><b>Materials:</b> participants generally bring their own materials, instruments and costumes unless an event's rules say otherwise.</li>
+        <li><b>Judging:</b> the judges' decision is final — no queries or appeals will be entertained.</li>
+        <li><b>Chest numbers</b> are issued by the faculty/student coordinator 15 minutes before the event begins.</li>
+        <li><b>Certificates</b> are issued to all winners on the final day of the fest.</li>
+      </ul>
+
+      <table class="gl-table">
+        <thead><tr><th>Position</th><th>Individual item</th><th>Group item</th></tr></thead>
+        <tbody>
+          <tr><td>I Place</td><td>5</td><td>10</td></tr>
+          <tr><td>II Place</td><td>3</td><td>6</td></tr>
+          <tr><td>III Place</td><td>1</td><td>2</td></tr>
+        </tbody>
+      </table>
+      <p>Points scored in group items are <b>not</b> counted toward individual championships (Kalathilakam / Kalaprathibha).</p>
+      </div>
+
+      <div class="gl-toplevel">
+      <h3 class="gl-part">Part II · Registration instructions</h3>
+      <ul>
+        <li>A maximum of <b>five (5)</b> events — including group events — can be registered per student, in one of two combinations: <b>3 off-stage + 2 on-stage</b>, or <b>2 off-stage + 3 on-stage</b>. This limit doesn't apply to Short Film.</li>
+        <li>Students can register for a maximum of <b>two on-stage group events</b>.</li>
+        <li><b>Important:</b> for each house, only two teams may register for any particular group event. If more than two register, the first two registered are accepted.</li>
+        <li>Only the <b>team leader</b> should register a group event; they list the other members. Multiple entries for the same team are grounds for disqualification.</li>
+        <li>All group and individual events (except off-stage literary events) must be registered only after consulting your house's faculty/student coordinators.</li>
+        <li>Do not select more than 5 events — any extra event registered will be cancelled without prior notice.</li>
+        <li>Coordinators have the final say on merging or cancelling events based on participation.</li>
+      </ul>
+
+      <table class="gl-table">
+        <thead><tr><th>#</th><th>Event type</th><th>Entries allowed per house</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Individual events</td><td>2 participants</td></tr>
+          <tr><td>2</td><td>Group events</td><td>2 teams</td></tr>
+          <tr><td>3</td><td>Off-stage literary events (poetry, short story, essay)</td><td>No restriction</td></tr>
+          <tr><td>4</td><td>On-stage literary events (recitation &amp; elocution)</td><td>3 participants</td></tr>
+          <tr><td>5</td><td>Debate (English)</td><td>1 team</td></tr>
+          <tr><td>6</td><td>Short Film / Photography</td><td>No restriction</td></tr>
+          <tr><td>7</td><td>Fine art individual events (pencil drawing, watercolour, clay modelling)</td><td>4</td></tr>
+          <tr><td>8</td><td>Rangoli</td><td>1 team</td></tr>
+          <tr><td>9</td><td>Mehendi</td><td>2 teams</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="gl-toplevel">
+      <h3 class="gl-part">Part III · Event rules</h3>
+
+      <details class="gl-section" open>
+        <summary>Musical events (PAF 01–11)</summary>
+        <div class="gl-section-body">
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 01</span>Light Music Vocal (Indian) — Solo — 5 min</h4>
+            <ul>
+              <li>Any Indian language.</li>
+              <li>Film songs, classical/semi-classical songs and karaoke are not allowed.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 02</span>Classical Music Vocal — Solo — 10 min</h4>
+            <ul>
+              <li>Hindustani or Carnatic style.</li>
+              <li>Cinema songs not allowed; choose raga and composition carefully.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 03</span>Western Vocal — Solo — 5 min</h4>
+            <ul>
+              <li>Song must be in English.</li>
+              <li>A pre-recorded instrumental/karaoke track may be used, but with no vocals on the track; submit as MP3 in advance.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 04</span>Group Song (Indian) — 10 min (6–8 members)</h4>
+            <ul>
+              <li>Only 2 entries per house.</li>
+              <li>Two songs performed, one of which must be patriotic; any Indian language.</li>
+              <li>No film songs.</li>
+              <li>2–3 instruments (non-singers) allowed; singers may also use more instruments.</li>
+              <li>2 minutes setup time per house, separate from the 10-minute slot.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 05</span>Group Song (Western) — 10 min (6–8 members)</h4>
+            <ul>
+              <li>Performance in English; any Western genre (pop, rock, gospel, acapella).</li>
+              <li>Acapella, or accompanied by up to 3 instruments played by members/accompanists — no pre-recorded tracks.</li>
+              <li>Only 2 entries per house.</li>
+              <li>2–3 instruments (non-singers) allowed; singers may also use more.</li>
+              <li>2 minutes setup time per house, separate from the 10-minute slot.</li>
+              <li>Judged on quality of singing only, not makeup.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 06</span>Stringed Instrument (Eastern) — 10 min (Individual)</h4>
+            <ul>
+              <li>Bring your own manual instrument; must perform with sruti.</li>
+              <li>Western instruments adapted to Indian raga system allowed.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 07</span>Stringed Instrument (Western) — 10 min (Individual)</h4>
+            <ul>
+              <li>Bring your own manual instrument.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 08</span>Wind Instrument (Eastern) — 10 min (Individual)</h4>
+            <ul>
+              <li>Indian wind instruments, or Western instruments adapted to the Indian raga system (harmonium, flute, pullankuzhal, bansuri, nadhaswaram, etc.).</li>
+              <li>Bring your own manual instrument.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 09</span>Wind Instrument (Western) — 10 min (Individual)</h4>
+            <ul>
+              <li>Western wind instruments (harmonium, accordion, clarinet, saxophone, organ, etc.), presented in Western styles.</li>
+              <li>Electronically operated keyboards don't count as wind instruments.</li>
+              <li>Bring your own instrument. Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 10</span>Percussion Instrument (Eastern) — 10 min (Individual)</h4>
+            <ul>
+              <li>Carnatic or Hindustani style; bring your own instrument.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 11</span>Percussion Instrument (Western) — 10 min (Individual)</h4>
+            <ul>
+              <li>Western style; bring your own instrument.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+        </div>
+      </details>
+
+      <details class="gl-section">
+        <summary>Dance events (PAF 12–15)</summary>
+        <div class="gl-section-body">
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 12</span>Classical Dance — Solo — 10 min</h4>
+            <ul>
+              <li>Any approved classical Indian genre (Kathakali, Bharatanatyam, Mohiniyattam, Kuchippudi, Kathak, Manipuri, Odissi, etc.).</li>
+              <li>Judged on talam, abhinayam, footwork and general impression — costume earns no extra marks, but should be traditional and appropriate.</li>
+              <li>Share the song with the media/sound team at registration.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 13</span>Western Dance — Solo — 5 min</h4>
+            <ul>
+              <li>Costume, makeup and props should be authentic style — no extra marks for costume.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 14</span>Folk Dance — Group — 8 min (6–8 members)</h4>
+            <ul>
+              <li>Authentic folk dance from any Indian region; folk music only, no classical form.</li>
+              <li>Costume, makeup and props must be authentic; share the song with the media/sound team at registration.</li>
+              <li>Judged on rhythm, formations, costume/makeup and overall effect.</li>
+              <li>Teams are responsible for removing their own sets/props.</li>
+              <li>Only 2 entries per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 15</span>Group Dance (Classical/Semi-Classical/Western/Contemporary) — 8 min (6–8 members)</h4>
+            <ul>
+              <li>Choreography should show coordinated movement, formations and expression.</li>
+              <li>Share the song with the media/sound team at registration.</li>
+              <li>Teams are responsible for removing their own sets/props.</li>
+              <li>Only 2 entries per house.</li>
+            </ul>
+          </div>
+
+        </div>
+      </details>
+
+      <details class="gl-section">
+        <summary>Literary events (PAF 16–37)</summary>
+        <div class="gl-section-body">
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 16–19</span>Elocution — Malayalam / English / Hindi / Sanskrit — 5 min (Individual)</h4>
+            <ul>
+              <li>Only 3 participants per house, per language.</li>
+              <li>Topic given 15 minutes before your turn — no books, phones, laptops or written scripts after that.</li>
+              <li>Must be delivered in the event's language.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 20–23</span>Essay Writing — Malayalam / English / Hindi / Sanskrit — 1 hour (Individual)</h4>
+            <ul>
+              <li>Topic given at the start; 800–1000 words (roughly 4–5 pages), handwritten on the sheets provided, in the event's language only.</li>
+              <li>Neat, legible handwriting; no extra time.</li>
+              <li>Only blue/black pens for writing (pencil for underlining only); no reference material, books or phones.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 24–27</span>Poetry Writing — Malayalam / English / Hindi / Sanskrit — 1 hour (Individual)</h4>
+            <ul>
+              <li>Topic/theme announced at the venue; must be an original composition written during the competition.</li>
+              <li>12–30 lines (max 2 pages), in the event's language only, on the sheets provided.</li>
+              <li>Only blue/black pens for writing (pencil for underlining/titles only); no books, notes or phones.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 28–31</span>Story Writing — Malayalam / English / Hindi / Sanskrit — 1 hour (Individual)</h4>
+            <ul>
+              <li>Prompt given at the start; must be an original work of fiction, 600–800 words (roughly 3–4 pages).</li>
+              <li>Handwritten on the sheets provided, only blue/black pens; no reference material or electronic devices.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 32–35</span>Recitation — Malayalam / English / Hindi / Sanskrit — 5 min (Individual)</h4>
+            <ul>
+              <li>Only 3 participants per house, per language.</li>
+              <li>Only published literary works in the event's language, recited from memory — no reading or prompting.</li>
+              <li>Voice modulation, pronunciation and clarity matter; avoid unnecessary dramatization or singing, and keep gestures natural.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 36</span>Geetha Chanting — 5 min (Individual)</h4>
+            <ul>
+              <li>Only 3 participants per house.</li>
+              <li>Any verse(s) from the Bhagavad Gita, chanted from memory in the original Sanskrit — no books or reference material.</li>
+              <li>Correct pronunciation, rhythm, pitch and traditional chanting style expected; no dramatization or singing.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 37</span>Debate (English) — 10 min (5 per team)</h4>
+            <ul>
+              <li>Only one team per house.</li>
+              <li>Topic announced 30 minutes in advance; stance ('For'/'Against') decided by lot at the venue.</li>
+              <li>Each speaker gets 5 minutes, followed by a 2-minute rebuttal.</li>
+              <li>Cue cards allowed, full scripts discouraged; no abusive language, personal attacks or irrelevant points.</li>
+              <li>Malpractice or disruptive behaviour leads to disqualification.</li>
+            </ul>
+          </div>
+
+        </div>
+      </details>
+
+      <details class="gl-section">
+        <summary>Short film (PAF 38)</summary>
+        <div class="gl-section-body">
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 38</span>Short Film — under 2 minutes</h4>
+            <ul>
+              <li>Theme: "The Rhythm of Sapta Swaras". Submit as .MP4/.MOV, Full HD (1920×1080), via the specified link or pen drive.</li>
+              <li>Must be original and not previously published or screened publicly; content must be original, royalty-free, or permission obtained — no obscene, defamatory or offensive material.</li>
+              <li>Any language accepted; non-English/Malayalam films need English subtitles.</li>
+              <li>Cast size can be based on the storyline; only one certificate is issued for the director &amp; team.</li>
+              <li>Not counted against the usual 5-event / off-stage-on-stage limit.</li>
+              <li><b>Submission deadline: 28th September, before 5:00 pm.</b></li>
+            </ul>
+          </div>
+        </div>
+      </details>
+
+      <details class="gl-section">
+        <summary>Theatre events (PAF 39–42)</summary>
+        <div class="gl-section-body">
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 39</span>Monoact — 5 min (Individual)</h4>
+            <ul>
+              <li>Dramatic solo performance; original or adapted theme/script, in English, Malayalam or Hindi.</li>
+              <li>Costumes/light makeup and minimal props allowed; no background music or sound effects.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 40</span>Mimicry — 5 min (Individual)</h4>
+            <ul>
+              <li>Imitate voices/sounds of personalities, animals or objects; present a variety of items.</li>
+              <li>Content must be decent — no offensive/vulgar material; no background music.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 41</span>Mime — 6 min (3–6 members)</h4>
+            <ul>
+              <li>Convey a story/theme through gesture, expression and body language — no lip movement, speech or sound.</li>
+              <li>Light instrumental music allowed (no lyrics); minimal props, appropriate costume, face painting allowed.</li>
+              <li>Only 2 teams per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 42</span>Fancy Dress — 2–3 min (Individual)</h4>
+            <ul>
+              <li>Choose any character — historical, cultural, social, mythological or creative — that's decent and non-offensive.</li>
+              <li>Arrange your own costume, props and makeup; props must be manageable and safe — no fire, water or sharp/dangerous objects.</li>
+              <li>A short dialogue/verse/act related to the character is fine, but only your own voice — no recordings, background music or prompting.</li>
+              <li>Only 2 participants per house.</li>
+            </ul>
+          </div>
+
+        </div>
+      </details>
+
+      <details class="gl-section">
+        <summary>Fine arts events (PAF 43–49)</summary>
+        <div class="gl-section-body">
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 43</span>Water Colouring — 2 hours (Individual)</h4>
+            <ul>
+              <li>Topic given at the venue; A3 sheet provided.</li>
+              <li>Bring your own watercolours, brushes, palette and tools — watercolour medium only.</li>
+              <li>Only 4 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 44</span>Pencil Drawing — 2 hours (Individual)</h4>
+            <ul>
+              <li>Topic announced at the venue.</li>
+              <li>Bring your own pencils, erasers, sharpeners and drawing sheets.</li>
+              <li>Only 4 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 45</span>Clay Modelling — 2 hours (Individual)</h4>
+            <ul>
+              <li>Topic announced on the spot; clay provided, but you may bring your own tools.</li>
+              <li>No external molds, colours or decorative materials.</li>
+              <li>Only 4 participants per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 46</span>Rangoli — 2 hours (2 per team)</h4>
+            <ul>
+              <li>Topic announced on the spot; 1×1 m space per participant.</li>
+              <li>Bring your own materials (coloured powders, sawdust, rice flour, flower petals) — no stencils, stickers or ready-made patterns.</li>
+              <li>Only one Rangoli per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 47</span>Photography — 7 hours, 10:00 am–4:00 pm on the 30th (Individual)</h4>
+            <ul>
+              <li>Theme given at the start; photos must be taken on campus/the designated area within the allotted time.</li>
+              <li>Mobile phones only — no DSLR or other cameras.</li>
+              <li>Submit one JPEG, no editing/post-processing/watermarks.</li>
+              <li>The university retains all rights to use the submitted pictures.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 48</span>Collage — 2 hours (2 per team)</h4>
+            <ul>
+              <li>Topic given on the spot; A3 base sheet provided.</li>
+              <li>Bring newspaper/magazine cuttings, scissors, adhesive, pencils, erasers, pens — no paint, sketches or other decorative materials.</li>
+              <li>Only 2 teams per house.</li>
+            </ul>
+          </div>
+
+          <div class="gl-event">
+            <h4><span class="gl-code">PAF 49</span>Mehendi Design — 2 hours (2 per team)</h4>
+            <ul>
+              <li>Bring your own model and Mehendi cones (natural preferred); theme (Bridal/Festive/Arabic) given on the spot.</li>
+              <li>No stencils, glitter or other decorative items.</li>
+              <li>Design only on both lower arms — palmer side of both hands, extendable to the palmer forearm with a minimum 6-inch length.</li>
+              <li>Only 2 teams per house.</li>
+            </ul>
+          </div>
+
+        </div>
+      </details>
+      </div>
+
+      <p style="margin-top:1.4rem; color:var(--muted); font-size:0.8rem;">Summarised from the official PRATIBHA 2026-27 event guidelines PDF. Always confirm exact wording against the official document before disqualifying or overriding a coordinator's call.</p>
+    </div>
+  </div>
+</div>
 
 <main>
   <div id="status">Loading registrations…</div>
@@ -1247,6 +1909,49 @@
   }, { passive: true });
   backToTopBtn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Guidelines modal
+  const glOverlay = document.getElementById('guidelinesOverlay');
+  const glBody = document.getElementById('glBody');
+  function openGuidelines() {
+    glOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeGuidelines() {
+    glOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('guidelinesBtn').addEventListener('click', openGuidelines);
+  document.getElementById('guidelinesClose').addEventListener('click', closeGuidelines);
+  glOverlay.addEventListener('click', (e) => {
+    if (e.target === glOverlay) closeGuidelines();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && glOverlay.classList.contains('open')) closeGuidelines();
+  });
+
+  document.getElementById('glExpandAll').addEventListener('click', () => {
+    glBody.querySelectorAll('details.gl-section').forEach(d => d.open = true);
+  });
+  document.getElementById('glCollapseAll').addEventListener('click', () => {
+    glBody.querySelectorAll('details.gl-section').forEach(d => d.open = false);
+  });
+
+  document.getElementById('glSearch').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const sections = glBody.querySelectorAll('details.gl-section');
+    sections.forEach(section => {
+      const events = section.querySelectorAll('.gl-event');
+      let sectionHasMatch = !q;
+      events.forEach(ev => {
+        const matches = !q || ev.textContent.toLowerCase().includes(q);
+        ev.classList.toggle('gl-hidden', !matches);
+        if (matches) sectionHasMatch = true;
+      });
+      section.classList.toggle('gl-hidden', !sectionHasMatch);
+      if (q && sectionHasMatch) section.open = true;
+    });
   });
 
   document.getElementById('searchInput').addEventListener('input', renderCards);
