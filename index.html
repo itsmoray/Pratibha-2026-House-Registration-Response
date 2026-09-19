@@ -1197,7 +1197,7 @@
   Data is fetched directly from the registration sheet each time this page loads. This page cannot write, edit or delete anything in the sheet. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script>
   // ── Configure this ────────────────────────────────────────────────
   // Paste the Apps Script Web App URL here (it ends in /exec).
@@ -1891,9 +1891,38 @@
 
     const ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
     ws['!cols'] = headers.map((h, i) => ({
-      wch: i < baseHeaders.length ? Math.max(12, h.length + 2) : (h === 'GroupMembers' ? 30 : Math.min(28, Math.max(10, h.length + 2)))
+      wch: i < baseHeaders.length ? Math.max(14, h.length + 4) : (h === 'GroupMembers' ? 32 : Math.min(30, Math.max(12, h.length + 4)))
     }));
-    ws['!freeze'] = { xSplit: 1, ySplit: 1 };
+
+    // Styling: bold, larger, coloured header row; bordered data rows with light banding
+    const line = { style: 'thin', color: { rgb: 'BFBFBF' } };
+    const border = { top: line, bottom: line, left: line, right: line };
+    const headerStyle = {
+      font: { name: 'Calibri', sz: 13, bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { patternType: 'solid', fgColor: { rgb: '5B3A8C' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border,
+    };
+    const eventStart = baseHeaders.length;
+    const eventEnd = eventStart + indivCols.length + groupCols.length; // exclusive
+    const lastRow = rows.length;
+    for (let c = 0; c < headers.length; c++) {
+      const hCell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (hCell) hCell.s = headerStyle;
+      for (let r = 1; r <= lastRow; r++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })] ||
+          (ws[XLSX.utils.encode_cell({ r, c })] = { t: 's', v: '' });
+        const isEvent = c >= eventStart && c < eventEnd;
+        cell.s = {
+          font: { name: 'Calibri', sz: 11, bold: isEvent && cell.v === 'Yes', color: { rgb: isEvent && cell.v === 'Yes' ? '2E7D32' : '000000' } },
+          fill: r % 2 === 0 ? { patternType: 'solid', fgColor: { rgb: 'F3EEF9' } } : { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: isEvent ? 'center' : 'left', vertical: 'center', wrapText: false },
+          border,
+        };
+      }
+    }
+    ws['!rows'] = [{ hpt: 42 }];
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(lastRow, 1), c: headers.length - 1 } }) };
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
     const suffix = (activeHouse === 'ALL' ? 'all-houses' : activeHouse.toLowerCase()) + (q ? '-filtered' : '');
