@@ -1174,7 +1174,7 @@
         <option value="registrant">Sort: by registration</option>
         <option value="event">Sort: by event</option>
       </select>
-      <button class="toolbar-btn" id="exportCsvBtn" type="button">Export CSV</button>
+      <button class="toolbar-btn" id="exportExcelBtn" type="button">Export Excel</button>
       <button class="toolbar-btn" id="printReportBtn" type="button">Print scrutiny report</button>
       <div class="count-pill" id="countPill"></div>
     </div>
@@ -1197,6 +1197,7 @@
   Data is fetched directly from the registration sheet each time this page loads. This page cannot write, edit or delete anything in the sheet. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
   // ── Configure this ────────────────────────────────────────────────
   // Paste the Apps Script Web App URL here (it ends in /exec).
@@ -1847,6 +1848,58 @@
     downloadBlob(toCSV(rows, headers), `pratibha-registrations-${suffix}.csv`, 'text/csv');
   }
 
+  // Excel export: one column per individual event and one per group event
+  // ("Yes" where the student registered). Built entirely in the browser from
+  // the already-loaded data — nothing is ever sent back to the sheet.
+  function exportFilteredExcel() {
+    if (typeof XLSX === 'undefined') {
+      alert('Excel export library could not be loaded. Check your internet connection and reload the page.');
+      return;
+    }
+    const q = document.getElementById('searchInput').value.trim();
+    const filtered = allRecords.filter(r => {
+      const houseOk = activeHouse === 'ALL' || normaliseHouse(r.house) === activeHouse;
+      return houseOk && matchesSearch(r, q);
+    });
+
+    // Event columns come from ALL registrations so every export has the same layout
+    const indivSet = new Set();
+    const groupSet = new Set();
+    allRecords.forEach(r => {
+      collectIndividualEvents(r).forEach(t => indivSet.add(t));
+      collectGroupEvents(r).forEach(t => groupSet.add(t));
+    });
+    const sortAZ = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+    const indivCols = Array.from(indivSet).sort(sortAZ);
+    const groupCols = Array.from(groupSet).sort(sortAZ);
+
+    const baseHeaders = ['Name', 'RegNumber', 'Batch', 'Programme', 'House', 'Gender', 'WhatsApp'];
+    const headers = baseHeaders.concat(indivCols, groupCols, ['GroupMembers']);
+
+    const rows = filtered.map(r => {
+      const indiv = new Set(collectIndividualEvents(r));
+      const group = new Set(collectGroupEvents(r));
+      const row = [
+        r.name, r.regNumber, r.batch, r.programme,
+        houseLabel(normaliseHouse(r.house)), r.gender, r.whatsapp,
+      ];
+      indivCols.forEach(t => row.push(indiv.has(t) ? 'Yes' : ''));
+      groupCols.forEach(t => row.push(group.has(t) ? 'Yes' : ''));
+      row.push(r.groupMembers || '');
+      return row;
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
+    ws['!cols'] = headers.map((h, i) => ({
+      wch: i < baseHeaders.length ? Math.max(12, h.length + 2) : (h === 'GroupMembers' ? 30 : Math.min(28, Math.max(10, h.length + 2)))
+    }));
+    ws['!freeze'] = { xSplit: 1, ySplit: 1 };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
+    const suffix = (activeHouse === 'ALL' ? 'all-houses' : activeHouse.toLowerCase()) + (q ? '-filtered' : '');
+    XLSX.writeFile(wb, `pratibha-registrations-${suffix}.xlsx`);
+  }
+
   function printScrutinyReport() {
     const quota = computeQuotaFlags();
     const students = computeStudentFlags();
@@ -1959,7 +2012,7 @@
     groupBy = e.target.value;
     renderCards();
   });
-  document.getElementById('exportCsvBtn').addEventListener('click', exportFilteredCSV);
+  document.getElementById('exportExcelBtn').addEventListener('click', exportFilteredExcel);
   document.getElementById('printReportBtn').addEventListener('click', printScrutinyReport);
 
   load();
