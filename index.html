@@ -696,6 +696,253 @@
     .gl-overlay{padding:0;}
     .gl-modal{max-width:none; width:100%; height:100%; max-height:none; border-radius:0;}
   }
+
+  /* ── Sign-in, editing & faculty management ─────────────────────── */
+  .user-bar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:0.5rem 0.7rem;
+    margin-top:1.1rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:0.82rem;
+    color:var(--muted);
+  }
+  .user-bar .who{color:var(--text); font-weight:600;}
+  .user-bar .spacer{flex:1 1 auto;}
+
+  .login-card{
+    max-width:400px;
+    margin:2.2rem auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:1.5rem 1.4rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.95rem;
+  }
+  .login-card h2{margin:0 0 0.25rem; font-size:1.2rem; font-weight:600; font-family:"Iowan Old Style","Georgia",serif;}
+  .login-card p{margin:0; font-size:0.83rem; color:var(--muted); line-height:1.45;}
+
+  .fld{display:flex; flex-direction:column; gap:0.3rem; font-size:0.74rem; color:var(--muted); min-width:0;}
+  .fld input, .fld select, .fld textarea{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:0.55rem 0.7rem;
+    font-size:0.9rem;
+    font-family:inherit;
+    outline:none;
+    width:100%;
+  }
+  .fld textarea{resize:vertical; min-height:4.5rem; line-height:1.4;}
+  .fld input:focus, .fld select:focus, .fld textarea:focus{border-color:var(--accent);}
+  .fld input[readonly], .fld input:disabled{opacity:0.65; cursor:not-allowed;}
+
+  .btn-primary{
+    background:var(--accent);
+    color:#1a1300;
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:0.55rem 1rem;
+    font-size:0.85rem;
+    font-weight:600;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary:disabled{opacity:0.55; cursor:wait; filter:none;}
+  .btn-primary.danger{background:#c9483a; border-color:#c9483a; color:#fff;}
+
+  .btn-mini{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:6px;
+    padding:0.28rem 0.6rem;
+    font-size:0.75rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-mini:hover{border-color:var(--accent); color:var(--accent);}
+  .btn-mini.danger:hover{border-color:#e0654f; color:#f0a493;}
+  .btn-mini:disabled{opacity:0.5; cursor:wait;}
+
+  .card-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.45rem;
+    justify-content:flex-end;
+    border-top:1px dashed var(--line);
+    padding-top:0.65rem;
+  }
+  .row-actions{display:inline-flex; gap:0.35rem; margin-left:auto;}
+
+  .ed-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(8,9,13,0.72);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:3vh 1rem;
+    z-index:120;
+    overflow-y:auto;
+  }
+  .ed-overlay.confirm{z-index:140; align-items:center;}
+  .ed-overlay.open{display:flex;}
+  .ed-modal{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    max-width:740px;
+    width:100%;
+    max-height:94vh;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .ed-modal.small{max-width:440px;}
+  .ed-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1rem;
+    padding:1.1rem 1.4rem 0.9rem;
+    border-bottom:1px solid var(--line);
+    flex:none;
+  }
+  .ed-head h2{margin:0 0 0.2rem; font-size:1.15rem; font-weight:600; font-family:"Iowan Old Style","Georgia",serif;}
+  .ed-head p{margin:0; font-size:0.8rem; color:var(--muted); word-break:break-word;}
+  .ed-body{
+    overflow-y:auto;
+    padding:1.1rem 1.4rem;
+    display:flex;
+    flex-direction:column;
+    gap:1.1rem;
+    min-height:0;
+  }
+  .ed-body p.ed-msg{margin:0; font-size:0.9rem; line-height:1.5;}
+  .ed-foot{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+    gap:0.6rem;
+    padding:0.9rem 1.4rem;
+    border-top:1px solid var(--line);
+    flex:none;
+  }
+  .ed-foot .ed-error{flex:1 1 100%; text-align:right;}
+  .ed-foot .push-left{margin-right:auto;}
+  .ed-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(210px,1fr)); gap:0.8rem 1rem;}
+  .ed-sec-title{
+    font-size:0.72rem;
+    color:var(--muted);
+    margin:0 0 0.15rem;
+    padding-top:0.5rem;
+    border-top:1px solid var(--line);
+  }
+  .ed-events{display:flex; flex-direction:column; gap:0.85rem;}
+  .ed-event-row{display:flex; flex-direction:column; gap:0.4rem;}
+  .ed-event-row .lbl{font-size:0.74rem; color:var(--muted);}
+  .chips{display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center;}
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:0.2rem;
+    font-size:0.78rem;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:0.18rem 0.25rem 0.18rem 0.55rem;
+  }
+  .chip button{
+    background:none;
+    border:none;
+    color:var(--muted);
+    cursor:pointer;
+    font-size:0.8rem;
+    line-height:1;
+    padding:0.1rem 0.3rem;
+    border-radius:4px;
+  }
+  .chip button:hover{color:#f0a493; background:#2e1c1e;}
+  .chips .none{font-size:0.78rem; color:var(--muted);}
+  .ed-add{
+    background:var(--panel-2);
+    border:1px dashed var(--line);
+    color:var(--muted);
+    border-radius:6px;
+    padding:0.25rem 0.4rem;
+    font-size:0.76rem;
+    font-family:inherit;
+    max-width:100%;
+    cursor:pointer;
+    outline:none;
+  }
+  .ed-add:focus, .ed-add:hover{border-color:var(--accent); color:var(--text);}
+  .ed-check{display:flex; align-items:center; gap:0.5rem; font-size:0.86rem; cursor:pointer;}
+  .ed-check input{accent-color:var(--accent); width:1rem; height:1rem;}
+  .ed-error{color:#e07a6b; font-size:0.82rem; min-height:1.1em;}
+  .ed-note{
+    background:#1f2a22;
+    border:1px solid #2f5a3c;
+    border-radius:8px;
+    padding:0.6rem 0.8rem;
+    font-size:0.82rem;
+    line-height:1.5;
+    word-break:break-all;
+  }
+
+  .fac-table{width:100%; border-collapse:collapse; font-size:0.83rem;}
+  .fac-table th{
+    text-align:left;
+    font-size:0.72rem;
+    font-weight:600;
+    color:var(--muted);
+    padding:0.35rem 0.5rem;
+    border-bottom:1px solid var(--line);
+  }
+  .fac-table td{padding:0.5rem; border-bottom:1px solid var(--line); vertical-align:middle; word-break:break-word;}
+  .fac-table td.act{white-space:nowrap; text-align:right;}
+  .fac-empty{color:var(--muted); font-size:0.85rem; padding:0.3rem 0;}
+  .pw-row{display:flex; gap:0.5rem; align-items:stretch;}
+  .pw-row input{flex:1 1 auto;}
+
+  .toast{
+    position:fixed;
+    left:1.2rem;
+    bottom:1.2rem;
+    max-width:min(420px, calc(100vw - 2.4rem));
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    color:var(--text);
+    padding:0.65rem 0.9rem;
+    border-radius:8px;
+    font-size:0.85rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    opacity:0;
+    transform:translateY(8px);
+    pointer-events:none;
+    transition:opacity .2s, transform .2s;
+    z-index:200;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast.err{border-left-color:#e0654f;}
+  @media (max-width:600px){
+    .ed-overlay{padding:0; }
+    .ed-modal{max-height:100vh; height:100%; border-radius:0; max-width:none;}
+    .ed-overlay.confirm{padding:1rem;}
+    .ed-modal.small{height:auto; max-height:90vh; border-radius:14px;}
+  }
 </style>
 </head>
 <body>
@@ -705,12 +952,13 @@
     <div class="header-copy">
       <p class="eyebrow">Rhythm of Sapta Swaras</p>
       <h1>Pratibha 2026-27 <span>· House Registrations</span></h1>
-      <p class="sub">Live, read-only view of the registration sheet. Search by name, register number or batch, or select a house below. Nothing here can edit the form or the spreadsheet.</p>
+      <p class="sub">Live view of the working registration sheet (Sheet1). Search by name, register number or batch, or select a house below. Faculty can correct registrations of their own house only; the original form responses are never modified.</p>
     </div>
     <button type="button" class="guidelines-btn" id="guidelinesBtn">
       <span class="gb-icon">📖</span> Event guidelines
     </button>
   </div>
+  <div class="user-bar" id="userBar" style="display:none;"></div>
 </header>
 
 <div class="gl-overlay" id="guidelinesOverlay">
@@ -1165,6 +1413,23 @@
 <main>
   <div id="status">Loading registrations…</div>
 
+  <div id="loginGate" style="display:none;">
+    <form class="login-card" id="loginForm" autocomplete="on">
+      <div>
+        <h2>Sign in</h2>
+        <p>Use the email and password issued to you by the admin. Faculty see and edit only the registrations of their own house.</p>
+      </div>
+      <label class="fld">Email
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </label>
+      <label class="fld">Password
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </label>
+      <div class="ed-error" id="loginError" role="alert"></div>
+      <button type="submit" class="btn-primary" id="loginBtn">Sign in</button>
+    </form>
+  </div>
+
   <div id="app" style="display:none;">
     <div class="toolbar">
       <div class="search-box">
@@ -1191,10 +1456,15 @@
   </div>
 </main>
 
+<div class="ed-overlay" id="editOverlay"><div class="ed-modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle"></div></div>
+<div class="ed-overlay" id="facultyOverlay"><div class="ed-modal" id="facultyModal" role="dialog" aria-modal="true" aria-labelledby="facTitle"></div></div>
+<div class="ed-overlay confirm" id="confirmOverlay"><div class="ed-modal small" id="confirmModal" role="alertdialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <button id="backToTop" class="back-to-top" type="button" aria-label="Back to top" title="Back to top">↑</button>
 
 <footer>
-  Data is fetched directly from the registration sheet each time this page loads. This page cannot write, edit or delete anything in the sheet. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.
+  Data is fetched from the working sheet (Sheet1) each time this page loads or is refreshed. Edits made here are written to Sheet1 only — the original Form Responses sheet is never touched. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
@@ -1287,6 +1557,8 @@
   let allRecords = [];
   let activeHouse = 'ALL';
   let groupBy = 'registrant';
+  let session = null;          // { token, user: { email, name, role, house } } once signed in
+  let dropdownOptions = {};    // event names seen in the sheet, for the editor's "add" menus
 
   async function load() {
     const statusEl = document.getElementById('status');
@@ -1295,18 +1567,21 @@
       statusEl.classList.add('error');
       return;
     }
+    if (!session) session = readSavedSession();
+    if (!session) { showLogin(); return; }
+    if (isFaculty()) activeHouse = session.user.house;
+    statusEl.textContent = 'Loading registrations…';
+    statusEl.classList.remove('error');
+    statusEl.style.display = 'block';
     try {
-      const res = await fetch(APPS_SCRIPT_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      allRecords = data.records || [];
-      statusEl.style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      renderHouseTabs();
-      renderCards();
+      applyList(await api('list'));
+      enterApp();
     } catch (err) {
-      statusEl.textContent = 'Could not load registrations (' + err.message + '). Check that the Apps Script web app is deployed with access set to "Anyone", and that the URL above is correct.';
+      if (!session) return; // api() already sent the person back to the sign-in screen
+      statusEl.innerHTML = escapeHtml('Could not load registrations (' + err.message + '). Check that the latest Apps Script version is deployed with access set to "Anyone", and that the URL above is correct.')
+        + ' <button type="button" class="btn-mini" id="statusSignOut">Sign out</button>';
       statusEl.classList.add('error');
+      document.getElementById('statusSignOut').addEventListener('click', () => signOut());
     }
   }
 
@@ -1321,10 +1596,12 @@
     const wrap = document.getElementById('houseTabs');
     wrap.innerHTML = '';
 
-    const allTab = makeTab('ALL', 'All houses', counts.ALL, null);
-    wrap.appendChild(allTab);
+    if (!isFaculty()) {
+      const allTab = makeTab('ALL', 'All houses', counts.ALL, null);
+      wrap.appendChild(allTab);
+    }
 
-    HOUSES.forEach(h => {
+    HOUSES.filter(h => !isFaculty() || h.key === session.user.house).forEach(h => {
       wrap.appendChild(makeTab(h.key, h.label, counts[h.key] || 0, h.varName));
     });
   }
@@ -1671,6 +1948,10 @@
           ${groupTags.map(t => `<span class="tag group">${escapeHtml(t)} (group)</span>`).join('')}
         </div>` : ''}
         ${r.groupMembers && r.groupMembers.trim() ? `<div class="group-members">${escapeHtml(r.groupMembers.trim())}</div>` : ''}
+        ${canEdit(r) ? `<div class="card-actions">
+          <button type="button" class="btn-mini" data-act="edit" data-row="${r._row}">Edit</button>
+          <button type="button" class="btn-mini danger" data-act="delete" data-row="${r._row}">Delete registration</button>
+        </div>` : ''}
       `;
       container.appendChild(card);
     });
@@ -1722,6 +2003,10 @@
             <span class="er-name">${escapeHtml(r.name || '(no name)')}</span>
             <span class="er-meta">${escapeHtml(r.regNumber || '')} · ${escapeHtml(r.batch || '')} · ${escapeHtml(houseLabel(house))}${isGroup ? ' · team leader' : ''} · ${escapeHtml(formatTimestamp(r.timestamp))}</span>
             ${isExcess ? '<span class="excess-tag">over cap — later entry</span>' : ''}
+            ${canEdit(r) ? `<span class="row-actions">
+              <button type="button" class="btn-mini" data-act="edit" data-row="${r._row}">Edit</button>
+              <button type="button" class="btn-mini danger" data-act="removeEvent" data-row="${r._row}" data-tag="${escapeAttr(tag)}">Remove from event</button>
+            </span>` : ''}
           </div>`;
         }).join('');
 
@@ -1769,8 +2054,9 @@
       if (sel) sel.value = 'registrant';
       needsRerender = true;
     }
-    if (activeHouse !== 'ALL') {
-      activeHouse = 'ALL';
+    const homeHouse = isFaculty() ? session.user.house : 'ALL';
+    if (activeHouse !== homeHouse) {
+      activeHouse = homeHouse;
       needsRerender = true;
     }
     const searchInput = document.getElementById('searchInput');
@@ -2043,6 +2329,654 @@
   });
   document.getElementById('exportExcelBtn').addEventListener('click', exportFilteredExcel);
   document.getElementById('printReportBtn').addEventListener('click', printScrutinyReport);
+
+  // ══════════════════════════════════════════════════════════════════
+  // Sign-in, scrutiny editing and faculty management
+  //
+  // Who may see/edit what is enforced by the Apps Script (Code.js) — the
+  // checks here only decide which buttons to show. Every change is written
+  // to "Sheet1" only; the Form Responses sheet is never touched.
+  // ══════════════════════════════════════════════════════════════════
+  const SESSION_KEY = 'pratibha-session-v1';
+
+  const EDIT_TEXT_FIELDS = [
+    ['name', 'Full name'],
+    ['regNumber', 'Register number'],
+    ['whatsapp', 'WhatsApp / phone'],
+    ['batch', 'Batch'],
+    ['programme', 'Programme'],
+  ];
+  const EDIT_LIST_FIELDS = [
+    ['individualEvents', 'Individual events'],
+    ['groupEvents', 'Group events (team leader)'],
+    ['fineArtsEvent', 'Fine arts events'],
+    ['elocution', 'Elocution'],
+    ['recitation', 'Recitation'],
+    ['poetryWriting', 'Poetry writing'],
+    ['shortStoryWriting', 'Short story writing'],
+    ['essayWriting', 'Essay writing'],
+  ];
+  const EDIT_FLAG_FIELDS = [
+    ['shortFilm', 'Short Film (Director)'],
+    ['geethaChanting', 'Geetha Chanting'],
+  ];
+
+  function isAdmin() { return !!session && session.user.role === 'admin'; }
+  function isFaculty() { return !!session && session.user.role === 'faculty'; }
+  function canEdit(r) {
+    if (!session) return false;
+    return isAdmin() || normaliseHouse(r.house) === session.user.house;
+  }
+
+  function saveSession() { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) {} }
+  function clearSavedSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+  function readSavedSession() {
+    try {
+      const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+      return s && s.token && s.user ? s : null;
+    } catch (e) { return null; }
+  }
+
+  // Same splitting rules the rest of this page uses for event columns.
+  function splitList(v) {
+    const s = String(v || '').trim();
+    if (!s || s.toLowerCase() === 'not interested') return [];
+    const out = [];
+    s.split(',').map(t => t.trim()).filter(Boolean).forEach(t => { if (!out.includes(t)) out.push(t); });
+    return out;
+  }
+
+  async function api(action, payload) {
+    const body = Object.assign({ action, token: session ? session.token : undefined }, payload || {});
+    let res;
+    try {
+      // Plain-text body keeps this a "simple" request so the browser doesn't need a CORS preflight (Apps Script can't answer one).
+      res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(body), cache: 'no-store' });
+    } catch (e) {
+      throw new Error('Could not reach the server. Check your connection and try again.');
+    }
+    if (!res.ok) throw new Error('Server error (HTTP ' + res.status + ').');
+    let data;
+    try { data = await res.json(); }
+    catch (e) { throw new Error('Unexpected reply from the server. Make sure the latest Apps Script version is deployed.'); }
+    if (!data.ok) {
+      const err = new Error(data.error || 'Request failed.');
+      err.code = data.code;
+      if (data.code === 'AUTH' && session) signOut('Your session has expired. Please sign in again.');
+      throw err;
+    }
+    return data;
+  }
+
+  function applyList(data) {
+    allRecords = data.records || [];
+    dropdownOptions = data.options || {};
+    if (data.user && session) { session.user = data.user; saveSession(); }
+  }
+
+  function redrawKeepingScroll() {
+    const y = window.scrollY;
+    renderHouseTabs();
+    renderCards();
+    window.scrollTo(0, y);
+  }
+
+  let toastTimer = null;
+  function toast(msg, isErr) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.toggle('err', !!isErr);
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), isErr ? 6000 : 3200);
+  }
+
+  function syncScrollLock() {
+    const open = document.querySelector('.ed-overlay.open, .gl-overlay.open');
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  // ── Sign-in screen ──────────────────────────────────────────────
+  function showLogin(msg) {
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('userBar').style.display = 'none';
+    document.getElementById('loginGate').style.display = 'block';
+    document.getElementById('loginError').textContent = msg || '';
+    document.getElementById('loginPassword').value = '';
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+
+  function signOut(msg) {
+    clearSavedSession();
+    session = null;
+    allRecords = [];
+    dropdownOptions = {};
+    activeHouse = 'ALL';
+    editorState = null;
+    facultyUsers = [];
+    // Don't leave the previous person's data sitting in the (hidden) page.
+    ['cards', 'eventGroups', 'houseTabs', 'quotaPanel', 'studentFlagsPanel', 'duplicatesPanel', 'editModal', 'facultyModal', 'confirmModal', 'userBar']
+      .forEach(id => { document.getElementById(id).innerHTML = ''; });
+    document.getElementById('searchInput').value = '';
+    ['editOverlay', 'facultyOverlay', 'confirmOverlay'].forEach(id => document.getElementById(id).classList.remove('open'));
+    syncScrollLock();
+    showLogin(msg);
+  }
+
+  function enterApp() {
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('loginGate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    if (isFaculty()) activeHouse = session.user.house;
+    renderUserBar();
+    renderHouseTabs();
+    renderCards();
+  }
+
+  function renderUserBar() {
+    const u = session.user;
+    const bar = document.getElementById('userBar');
+    const scope = u.role === 'admin' ? 'Admin · all houses' : houseLabel(u.house) + ' faculty';
+    const dot = u.role === 'admin' ? '--accent' : houseVar(u.house);
+    bar.innerHTML = `
+      <span>Signed in as <span class="who">${escapeHtml(u.name || u.email)}</span></span>
+      <span class="house-badge" style="--dot:var(${dot})"><span class="dot"></span>${escapeHtml(scope)}</span>
+      <span class="spacer"></span>
+      <button type="button" class="btn-mini" id="refreshBtn">↻ Refresh</button>
+      ${u.role === 'admin' ? '<button type="button" class="btn-mini" id="manageFacultyBtn">Manage faculty</button>' : ''}
+      <button type="button" class="btn-mini" id="signOutBtn">Sign out</button>`;
+    bar.style.display = 'flex';
+
+    document.getElementById('signOutBtn').addEventListener('click', () => signOut());
+    document.getElementById('refreshBtn').addEventListener('click', async (e) => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      try {
+        applyList(await api('list'));
+        redrawKeepingScroll();
+        toast('Refreshed from Sheet1');
+      } catch (err) { toast(err.message, true); }
+      b.disabled = false;
+    });
+    const mf = document.getElementById('manageFacultyBtn');
+    if (mf) mf.addEventListener('click', openFaculty);
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      session = null;
+      const data = await api('login', {
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value,
+      });
+      session = { token: data.token, user: data.user };
+      saveSession();
+      activeHouse = isFaculty() ? session.user.house : 'ALL';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginGate').style.display = 'none';
+      await load();
+    } catch (err) {
+      session = null;
+      errEl.textContent = err.message;
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  });
+
+  // ── Confirm dialog ──────────────────────────────────────────────
+  function askConfirm(opts) {
+    return new Promise(resolve => {
+      const ov = document.getElementById('confirmOverlay');
+      const m = document.getElementById('confirmModal');
+      m.innerHTML = `
+        <div class="ed-head"><div><h2>${escapeHtml(opts.title)}</h2></div></div>
+        <div class="ed-body"><p class="ed-msg">${opts.messageHtml}</p></div>
+        <div class="ed-foot">
+          <button type="button" class="toolbar-btn" data-c="no">Cancel</button>
+          <button type="button" class="btn-primary${opts.danger ? ' danger' : ''}" data-c="yes">${escapeHtml(opts.okLabel || 'Confirm')}</button>
+        </div>`;
+      ov.classList.add('open');
+      syncScrollLock();
+      const done = (v) => {
+        ov.classList.remove('open');
+        ov.removeEventListener('click', onClick);
+        document.removeEventListener('keydown', onKey, true);
+        syncScrollLock();
+        resolve(v);
+      };
+      const onClick = (e) => {
+        const b = e.target.closest('[data-c]');
+        if (b) done(b.dataset.c === 'yes');
+        else if (e.target === ov) done(false);
+      };
+      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+      ov.addEventListener('click', onClick);
+      document.addEventListener('keydown', onKey, true);
+      const focusBtn = m.querySelector('[data-c="no"]');
+      if (focusBtn) focusBtn.focus();
+    });
+  }
+
+  // ── Edit a registration ─────────────────────────────────────────
+  let editorState = null; // { r, lists: {field: [...]}, saving }
+
+  function edInput(id, label, value, opts) {
+    opts = opts || {};
+    return `<label class="fld">${escapeHtml(label)}
+      <input type="text" id="${id}" value="${escapeAttr(value || '')}"${opts.readonly ? ' readonly' : ''}${opts.maxlength ? ' maxlength="' + opts.maxlength + '"' : ''}>
+    </label>`;
+  }
+
+  function openEditor(r) {
+    editorState = { r, lists: {}, saving: false };
+    EDIT_LIST_FIELDS.forEach(([f]) => { editorState.lists[f] = splitList(r[f]); });
+
+    const houseKey = normaliseHouse(r.house);
+    const known = HOUSES.some(h => h.key === houseKey);
+    const genderOpts = Array.from(new Set((dropdownOptions.gender || []).concat(r.gender ? [r.gender.trim()] : [])));
+
+    const houseField = isAdmin()
+      ? `<label class="fld">House
+          <select id="ed-house">
+            ${known ? '' : `<option value="${escapeAttr(houseKey)}" selected>${escapeHtml(r.house || '(blank)')} — unrecognised</option>`}
+            ${HOUSES.map(h => `<option value="${h.key}"${h.key === houseKey ? ' selected' : ''}>${escapeHtml(h.label)}</option>`).join('')}
+          </select>
+        </label>`
+      : edInput('ed-house-ro', 'House', houseLabel(houseKey), { readonly: true });
+
+    const m = document.getElementById('editModal');
+    m.innerHTML = `
+      <div class="ed-head">
+        <div>
+          <h2 id="editTitle">Edit registration</h2>
+          <p>${escapeHtml(r.email || '')} · registered ${escapeHtml(formatTimestamp(r.timestamp))}</p>
+        </div>
+        <button type="button" class="gl-close" data-ed="close" aria-label="Close">✕</button>
+      </div>
+      <div class="ed-body">
+        <div class="ed-grid">
+          ${EDIT_TEXT_FIELDS.map(([f, label]) => edInput('ed-' + f, label, r[f], { maxlength: 200 })).join('')}
+          <label class="fld">Gender
+            <select id="ed-gender">
+              <option value=""${r.gender ? '' : ' selected'}>—</option>
+              ${genderOpts.map(g => `<option value="${escapeAttr(g)}"${g === (r.gender || '').trim() ? ' selected' : ''}>${escapeHtml(g)}</option>`).join('')}
+            </select>
+          </label>
+          ${houseField}
+        </div>
+
+        <div class="ed-events">
+          <div class="ed-sec-title">Events — remove with ✕, or add from the menu</div>
+          ${EDIT_LIST_FIELDS.map(([f, label]) => `
+            <div class="ed-event-row">
+              <span class="lbl">${escapeHtml(label)}</span>
+              <div class="chips" id="chips-${f}"></div>
+              <div><select class="ed-add" id="add-${f}" data-field="${f}"></select></div>
+            </div>`).join('')}
+          ${EDIT_FLAG_FIELDS.map(([f, label]) => `
+            <label class="ed-check">
+              <input type="checkbox" id="ed-flag-${f}"${(r[f] || '').trim().toLowerCase() === 'participating' ? ' checked' : ''}>
+              ${escapeHtml(label)} — participating
+            </label>`).join('')}
+        </div>
+
+        <label class="fld">Group members
+          <textarea id="ed-groupMembers" maxlength="2000">${escapeHtml(r.groupMembers || '')}</textarea>
+        </label>
+      </div>
+      <div class="ed-foot">
+        <div class="ed-error" id="edError" role="alert"></div>
+        <button type="button" class="btn-mini danger push-left" data-ed="delete">Delete registration</button>
+        <button type="button" class="toolbar-btn" data-ed="close">Cancel</button>
+        <button type="button" class="btn-primary" data-ed="save" id="edSaveBtn">Save changes</button>
+      </div>`;
+    EDIT_LIST_FIELDS.forEach(([f]) => renderChips(f));
+    document.getElementById('editOverlay').classList.add('open');
+    syncScrollLock();
+    const first = document.getElementById('ed-name');
+    if (first) first.focus();
+  }
+
+  function renderChips(field) {
+    const list = editorState.lists[field];
+    document.getElementById('chips-' + field).innerHTML = list.length
+      ? list.map((t, i) => `<span class="chip">${escapeHtml(t)}<button type="button" data-ed="rm" data-f="${field}" data-i="${i}" aria-label="Remove ${escapeAttr(t)}" title="Remove">✕</button></span>`).join('')
+      : '<span class="none">None</span>';
+    const avail = (dropdownOptions[field] || []).filter(o => !list.includes(o));
+    const sel = document.getElementById('add-' + field);
+    sel.innerHTML = '<option value="">＋ Add…</option>' + avail.map(o => `<option value="${escapeAttr(o)}">${escapeHtml(o)}</option>`).join('');
+    sel.style.display = avail.length ? '' : 'none';
+  }
+
+  function closeEditor() {
+    if (editorState && editorState.saving) return;
+    document.getElementById('editOverlay').classList.remove('open');
+    editorState = null;
+    syncScrollLock();
+  }
+
+  async function saveEditor() {
+    if (!editorState || editorState.saving) return;
+    const r = editorState.r;
+    const errEl = document.getElementById('edError');
+    errEl.textContent = '';
+    const val = id => document.getElementById(id).value;
+    const changes = {};
+
+    EDIT_TEXT_FIELDS.forEach(([f]) => {
+      const v = val('ed-' + f).trim();
+      if (v !== (r[f] || '').trim()) changes[f] = v;
+    });
+    const gm = val('ed-groupMembers').trim();
+    if (gm !== (r.groupMembers || '').trim()) changes.groupMembers = gm;
+    if (val('ed-gender') !== (r.gender || '').trim()) changes.gender = val('ed-gender');
+    EDIT_LIST_FIELDS.forEach(([f]) => {
+      const now = editorState.lists[f];
+      if (now.join('\u0001') !== splitList(r[f]).join('\u0001')) changes[f] = now.join(', ');
+    });
+    EDIT_FLAG_FIELDS.forEach(([f]) => {
+      const now = document.getElementById('ed-flag-' + f).checked;
+      const before = (r[f] || '').trim().toLowerCase() === 'participating';
+      if (now !== before) changes[f] = now ? 'Participating' : 'Not Interested';
+    });
+    if (isAdmin()) {
+      const h = val('ed-house');
+      if (h !== normaliseHouse(r.house)) changes.house = h;
+    }
+
+    if ('name' in changes && !changes.name) { errEl.textContent = 'Name cannot be empty.'; return; }
+    if (Object.keys(changes).length === 0) { closeEditor(); toast('No changes to save.'); return; }
+
+    const btn = document.getElementById('edSaveBtn');
+    editorState.saving = true;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const data = await api('update', { row: r._row, expect: { timestamp: r.timestamp, email: r.email }, changes });
+      editorState.saving = false;
+      applyList(data);
+      closeEditor();
+      redrawKeepingScroll();
+      toast('Saved to Sheet1.');
+    } catch (err) {
+      if (!editorState) return; // signed out meanwhile
+      editorState.saving = false;
+      btn.disabled = false;
+      btn.textContent = 'Save changes';
+      errEl.textContent = err.message;
+    }
+  }
+
+  async function deleteRegistration(r) {
+    const ok = await askConfirm({
+      title: 'Delete this registration?',
+      messageHtml: `<b>${escapeHtml(r.name || '(no name)')}</b> (${escapeHtml(r.regNumber || 'no reg no.')}) · ${escapeHtml(houseLabel(normaliseHouse(r.house)))}<br><br>
+        This removes their whole row from Sheet1, along with every event they registered for. The original Form Responses sheet is not affected.`,
+      okLabel: 'Delete registration',
+      danger: true,
+    });
+    if (!ok) return false;
+    try {
+      const data = await api('delete', { row: r._row, expect: { timestamp: r.timestamp, email: r.email } });
+      applyList(data);
+      redrawKeepingScroll();
+      toast('Registration deleted from Sheet1.');
+      return true;
+    } catch (err) {
+      toast(err.message, true);
+      return false;
+    }
+  }
+
+  // Build the column changes needed to take one event tag off a registration.
+  function changesForRemovingTag(r, tag) {
+    const changes = {};
+    EDIT_LIST_FIELDS.forEach(([f]) => {
+      const list = splitList(r[f]);
+      if (list.includes(tag)) changes[f] = list.filter(t => t !== tag).join(', ');
+    });
+    if (tag === 'Short Film (Director)' && (r.shortFilm || '').trim().toLowerCase() === 'participating') changes.shortFilm = 'Not Interested';
+    if (tag === 'Geetha Chanting' && (r.geethaChanting || '').trim().toLowerCase() === 'participating') changes.geethaChanting = 'Not Interested';
+    return changes;
+  }
+
+  async function removeEventFromStudent(r, tag) {
+    const changes = changesForRemovingTag(r, tag);
+    if (Object.keys(changes).length === 0) { toast('That event is no longer on this registration.', true); return; }
+    const ok = await askConfirm({
+      title: 'Remove this event?',
+      messageHtml: `Take <b>${escapeHtml(tag)}</b> off <b>${escapeHtml(r.name || '(no name)')}</b>'s registration (${escapeHtml(houseLabel(normaliseHouse(r.house)))})?<br><br>Their other events stay as they are. This is written to Sheet1.`,
+      okLabel: 'Remove event',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const data = await api('update', { row: r._row, expect: { timestamp: r.timestamp, email: r.email }, changes });
+      applyList(data);
+      redrawKeepingScroll();
+      toast('Event removed in Sheet1.');
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  // Buttons on cards / event rows
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const r = allRecords.find(x => String(x._row) === btn.dataset.row);
+    if (!r || !canEdit(r)) return;
+    const act = btn.dataset.act;
+    if (act === 'edit') openEditor(r);
+    else if (act === 'delete' || act === 'removeEvent') {
+      btn.disabled = true;
+      try {
+        if (act === 'delete') await deleteRegistration(r);
+        else await removeEventFromStudent(r, btn.dataset.tag);
+      } finally { btn.disabled = false; }
+    }
+  });
+
+  // Clicks inside the editor
+  document.getElementById('editModal').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-ed]');
+    if (!b || !editorState) return;
+    const what = b.dataset.ed;
+    if (what === 'close') closeEditor();
+    else if (what === 'save') saveEditor();
+    else if (what === 'rm') {
+      editorState.lists[b.dataset.f].splice(Number(b.dataset.i), 1);
+      renderChips(b.dataset.f);
+    } else if (what === 'delete') {
+      if (editorState.saving) return;
+      const r = editorState.r;
+      if (await deleteRegistration(r)) { editorState.saving = false; closeEditor(); }
+    }
+  });
+  document.getElementById('editModal').addEventListener('change', (e) => {
+    const sel = e.target.closest('select.ed-add');
+    if (!sel || !editorState || !sel.value) return;
+    const f = sel.dataset.field;
+    if (!editorState.lists[f].includes(sel.value)) editorState.lists[f].push(sel.value);
+    renderChips(f);
+  });
+
+  // ── Faculty management (admin) ──────────────────────────────────
+  let facultyUsers = [];
+
+  function generatePassword() {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const buf = new Uint32Array(10);
+    crypto.getRandomValues(buf);
+    return Array.from(buf, n => chars[n % chars.length]).join('');
+  }
+
+  async function openFaculty() {
+    const ov = document.getElementById('facultyOverlay');
+    const m = document.getElementById('facultyModal');
+    m.innerHTML = `
+      <div class="ed-head"><div><h2 id="facTitle">Manage faculty</h2><p>Loading…</p></div>
+        <button type="button" class="gl-close" data-fac="close" aria-label="Close">✕</button></div>`;
+    ov.classList.add('open');
+    syncScrollLock();
+    try {
+      const data = await api('listUsers');
+      facultyUsers = data.users || [];
+      renderFacultyModal();
+    } catch (err) {
+      m.querySelector('.ed-head p').textContent = err.message;
+    }
+  }
+
+  function renderFacultyModal() {
+    const m = document.getElementById('facultyModal');
+    m.innerHTML = `
+      <div class="ed-head">
+        <div><h2 id="facTitle">Manage faculty</h2>
+          <p>Each faculty member signs in with their email and password and sees only their own house.</p></div>
+        <button type="button" class="gl-close" data-fac="close" aria-label="Close">✕</button>
+      </div>
+      <div class="ed-body">
+        <div id="facTable"></div>
+        <div class="ed-sec-title">Add faculty, or edit an existing one (use the same email)</div>
+        <div class="ed-grid">
+          <label class="fld">Name <input type="text" id="fac-name" maxlength="80" autocomplete="off"></label>
+          <label class="fld">Email <input type="email" id="fac-email" autocomplete="off"></label>
+          <label class="fld">House
+            <select id="fac-house">
+              <option value="">Choose house…</option>
+              ${HOUSES.map(h => `<option value="${h.key}">${escapeHtml(h.label)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="fld">Password <span style="opacity:.8">(min 8 characters; leave blank to keep the current one)</span>
+            <div class="pw-row">
+              <input type="text" id="fac-pass" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn-mini" data-fac="gen">Generate</button>
+            </div>
+          </label>
+        </div>
+        <div id="facNote"></div>
+      </div>
+      <div class="ed-foot">
+        <div class="ed-error" id="facError" role="alert"></div>
+        <button type="button" class="toolbar-btn" data-fac="close">Close</button>
+        <button type="button" class="btn-primary" data-fac="save" id="facSaveBtn">Save faculty</button>
+      </div>`;
+    renderFacultyTable();
+  }
+
+  function renderFacultyTable() {
+    const el = document.getElementById('facTable');
+    if (!facultyUsers.length) {
+      el.innerHTML = '<div class="fac-empty">No faculty added yet.</div>';
+      return;
+    }
+    el.innerHTML = `<table class="fac-table">
+      <thead><tr><th>Name</th><th>Email</th><th>House</th><th></th></tr></thead>
+      <tbody>${facultyUsers.map(u => `
+        <tr>
+          <td>${escapeHtml(u.name)}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td><span class="house-badge" style="--dot:var(${houseVar(u.house)})"><span class="dot"></span>${escapeHtml(houseLabel(u.house))}</span></td>
+          <td class="act">
+            <button type="button" class="btn-mini" data-fac="edit" data-email="${escapeAttr(u.email)}">Edit</button>
+            <button type="button" class="btn-mini danger" data-fac="remove" data-email="${escapeAttr(u.email)}">Remove</button>
+          </td>
+        </tr>`).join('')}</tbody></table>`;
+  }
+
+  function closeFaculty() {
+    document.getElementById('facultyOverlay').classList.remove('open');
+    syncScrollLock();
+  }
+
+  async function saveFaculty() {
+    const errEl = document.getElementById('facError');
+    errEl.textContent = '';
+    const payload = {
+      name: document.getElementById('fac-name').value.trim(),
+      email: document.getElementById('fac-email').value.trim(),
+      house: document.getElementById('fac-house').value,
+      password: document.getElementById('fac-pass').value,
+    };
+    if (!payload.name || !payload.email || !payload.house) { errEl.textContent = 'Enter a name, email and house.'; return; }
+    const isNew = !facultyUsers.some(u => u.email === payload.email.toLowerCase());
+    if (isNew && payload.password.length < 8) { errEl.textContent = 'Set a password of at least 8 characters (or press Generate).'; return; }
+
+    const btn = document.getElementById('facSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const data = await api('saveUser', payload);
+      facultyUsers = data.users || [];
+      renderFacultyTable();
+      document.getElementById('facNote').innerHTML = payload.password
+        ? `<div class="ed-note"><b>Saved. Share these sign-in details with ${escapeHtml(payload.name)}:</b><br>Email: ${escapeHtml(payload.email)}<br>Password: ${escapeHtml(payload.password)}<br><span style="color:var(--muted)">The password can't be shown again after you close this window.</span></div>`
+        : `<div class="ed-note">Saved. ${escapeHtml(payload.name)}'s password was left unchanged.</div>`;
+      ['fac-name', 'fac-email', 'fac-pass'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('fac-house').value = '';
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Save faculty';
+  }
+
+  document.getElementById('facultyModal').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-fac]');
+    if (!b) return;
+    const what = b.dataset.fac;
+    if (what === 'close') closeFaculty();
+    else if (what === 'gen') document.getElementById('fac-pass').value = generatePassword();
+    else if (what === 'save') saveFaculty();
+    else if (what === 'edit') {
+      const u = facultyUsers.find(x => x.email === b.dataset.email);
+      if (!u) return;
+      document.getElementById('fac-name').value = u.name;
+      document.getElementById('fac-email').value = u.email;
+      document.getElementById('fac-house').value = u.house;
+      document.getElementById('fac-pass').value = '';
+      document.getElementById('facNote').innerHTML = '';
+      document.getElementById('fac-name').focus();
+    } else if (what === 'remove') {
+      const u = facultyUsers.find(x => x.email === b.dataset.email);
+      if (!u) return;
+      const ok = await askConfirm({
+        title: 'Remove this faculty account?',
+        messageHtml: `<b>${escapeHtml(u.name)}</b> (${escapeHtml(u.email)}) will no longer be able to sign in. Registrations they already edited stay as they are in Sheet1.`,
+        okLabel: 'Remove faculty',
+        danger: true,
+      });
+      if (!ok) return;
+      try {
+        const data = await api('deleteUser', { email: u.email });
+        facultyUsers = data.users || [];
+        renderFacultyTable();
+        toast('Faculty account removed.');
+      } catch (err) {
+        document.getElementById('facError').textContent = err.message;
+      }
+    }
+  });
+  document.getElementById('facultyOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'facultyOverlay') closeFaculty();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('confirmOverlay').classList.contains('open')) return; // handled by the dialog itself
+    if (document.getElementById('editOverlay').classList.contains('open')) closeEditor();
+    else if (document.getElementById('facultyOverlay').classList.contains('open')) closeFaculty();
+  });
 
   load();
 </script>
