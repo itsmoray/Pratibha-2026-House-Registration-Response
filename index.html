@@ -975,6 +975,54 @@
   .pub-toggle .pub-knob{position:absolute; top:2px; left:2px; width:10px; height:10px; border-radius:50%; background:var(--cream); box-shadow:0 0 0 1px rgba(0,0,0,0.15); transition:left 0.15s;}
   .pub-toggle.on .pub-track{background:var(--ink);}
   .pub-toggle.on .pub-knob{left:14px;}
+  /* Full-screen loader shown while switching between the original form
+     responses and the scrutiny done list. Blocks clicks until the new list is on screen. */
+  .switch-loader{
+    position:fixed;
+    inset:0;
+    z-index:150;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:1.2rem;
+    background:rgba(245,240,229,0.78);
+    -webkit-backdrop-filter:blur(3px);
+    backdrop-filter:blur(3px);
+    opacity:0;
+    visibility:hidden;
+    cursor:progress;
+    transition:opacity .18s ease, visibility 0s linear .18s;
+  }
+  .switch-loader.show{opacity:1; visibility:visible; transition:opacity .18s ease;}
+  .switch-loader-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-top:3px solid var(--accent);
+    border-radius:12px;
+    padding:1.5rem 2rem 1.3rem;
+    text-align:center;
+    max-width:min(380px, 100%);
+    box-shadow:0 12px 40px rgba(43,22,17,0.22);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .switch-spinner{
+    width:46px;
+    height:46px;
+    margin:0 auto 0.95rem;
+    border-radius:50%;
+    border:4px solid var(--panel-2);
+    border-top-color:var(--maroon);
+    border-right-color:var(--accent);
+    animation:switchSpin .8s linear infinite;
+  }
+  .switch-loader-title{font-weight:600; font-size:1rem; color:var(--ink);}
+  .switch-loader-sub{margin-top:0.3rem; font-size:0.82rem; color:var(--muted);}
+  @keyframes switchSpin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){
+    .switch-spinner{animation-duration:2.4s;}
+    .switch-loader, .switch-loader.show{transition:none;}
+  }
+
   .toast{
     position:fixed;
     left:1.2rem;
@@ -1532,6 +1580,14 @@
 <div class="ed-overlay" id="pwOverlay"><div class="ed-modal small" id="pwModal" role="dialog" aria-modal="true" aria-labelledby="pwTitle"></div></div>
 <div class="ed-overlay confirm" id="confirmOverlay"><div class="ed-modal small" id="confirmModal" role="alertdialog" aria-modal="true"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="switch-loader" id="switchLoader" role="status" aria-live="polite" aria-hidden="true">
+  <div class="switch-loader-card">
+    <div class="switch-spinner" aria-hidden="true"></div>
+    <div class="switch-loader-title" id="switchLoaderTitle">Loading…</div>
+    <div class="switch-loader-sub">Please wait — you can start once the list has fully loaded.</div>
+  </div>
+</div>
 
 <button id="backToTop" class="back-to-top" type="button" aria-label="Back to top" title="Back to top">↑</button>
 
@@ -2651,12 +2707,43 @@
     }
   }
 
+  // Loading overlay for the "Original form responses" <-> "Scrutiny done registrations"
+  // switch. It stays up until the new list has been fetched AND drawn, so nobody starts
+  // working on a half-switched page. Shown for at least a moment so it never just flashes.
+  let switchLoaderSince = 0;
+  const SWITCH_LOADER_MIN_MS = 500;
+  function switchLoaderTargets() {
+    return ['app', 'userBar'].map(id => document.getElementById(id)).filter(Boolean);
+  }
+  function showSwitchLoader(src) {
+    const el = document.getElementById('switchLoader');
+    document.getElementById('switchLoaderTitle').textContent =
+      src === 'scrutiny' ? 'Switching to Scrutiny done registrations…' : 'Switching to Original form responses…';
+    switchLoaderSince = Date.now();
+    switchLoaderTargets().forEach(t => { t.inert = true; }); // also blocks keyboard use while loading
+    el.setAttribute('aria-hidden', 'false');
+    el.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  async function hideSwitchLoader() {
+    const wait = Math.max(0, SWITCH_LOADER_MIN_MS - (Date.now() - switchLoaderSince));
+    if (wait) await new Promise(r => setTimeout(r, wait));
+    // let the freshly drawn list paint before the overlay lifts
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const el = document.getElementById('switchLoader');
+    el.classList.remove('show');
+    el.setAttribute('aria-hidden', 'true');
+    switchLoaderTargets().forEach(t => { t.inert = false; });
+    syncScrollLock();
+  }
+
   async function switchSource(src) {
     if (!isAdmin() || currentSource() === src) return;
     const previous = session.source;
     session.source = src;
     saveSession();
     document.querySelectorAll('.src-switch button').forEach(b => { b.disabled = true; });
+    showSwitchLoader(src);
     try {
       await loadSourceData();
       renderUserBar();
@@ -2668,6 +2755,8 @@
       saveSession();
       renderUserBar();
       toast(err.message, true);
+    } finally {
+      await hideSwitchLoader();
     }
   }
 
@@ -2942,6 +3031,7 @@
     const previous = publicSource;
     publicSource = src;
     document.querySelectorAll('.src-switch button').forEach(b => { b.disabled = true; });
+    showSwitchLoader(src);
     try {
       allRecords = await fetchPublic(src);
       dropdownOptions = {};
@@ -2958,6 +3048,8 @@
       publicSource = previous;
       renderUserBar();
       toast(err.message, true);
+    } finally {
+      await hideSwitchLoader();
     }
   }
 
