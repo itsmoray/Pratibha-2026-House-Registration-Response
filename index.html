@@ -970,6 +970,11 @@
   .src-note{flex:1 1 100%; font-size:0.78rem; color:var(--muted);}
   .src-note b{color:var(--text); font-weight:600;}
   .muted-note{font-size:0.75rem; color:var(--muted);}
+  .pub-toggle{display:inline-flex; align-items:center; gap:0.45rem;}
+  .pub-toggle .pub-track{position:relative; width:26px; height:14px; border-radius:999px; background:var(--line); flex:0 0 auto; transition:background 0.15s;}
+  .pub-toggle .pub-knob{position:absolute; top:2px; left:2px; width:10px; height:10px; border-radius:50%; background:var(--cream); box-shadow:0 0 0 1px rgba(0,0,0,0.15); transition:left 0.15s;}
+  .pub-toggle.on .pub-track{background:var(--ink);}
+  .pub-toggle.on .pub-knob{left:14px;}
   .toast{
     position:fixed;
     left:1.2rem;
@@ -1622,6 +1627,9 @@
   let activeHouse = 'ALL';
   let groupBy = 'registrant';
   let session = null;          // { token, user: { email, name, role, house } } once signed in
+  let publicSource = 'original';        // public (signed-out) view: 'original' | 'scrutiny'
+  let publicScrutinyAvailable = false;  // public view: has the admin switched the scrutiny list on for everyone?
+  let publicScrutinyOn = false;         // admin: current state of that switch
   let dropdownOptions = {};    // event names seen in the sheet, for the editor's "add" menus
 
   async function load() {
@@ -2436,7 +2444,7 @@
   //   'original'  = live Form Responses (public view; admin can also choose it)
   //   'scrutiny'  = "Scrutiny done registrations" (Sheet1) — faculty always; admin by choice
   function currentSource() {
-    if (!session) return 'original';
+    if (!session) return publicSource; // public view: 'scrutiny' only while the admin has allowed it (read-only)
     if (isFaculty()) return 'scrutiny';
     return session.source === 'scrutiny' ? 'scrutiny' : 'original';
   }
@@ -2444,9 +2452,10 @@
   async function loadSourceData() {
     if (currentSource() === 'original') {
       // For a signed-in admin also confirm the sign-in is still valid.
-      const [records] = await Promise.all([fetchPublic(), session ? api('whoami') : Promise.resolve()]);
+      const [records, who] = await Promise.all([fetchPublic('original'), session ? api('whoami') : Promise.resolve(null)]);
       allRecords = records;
       dropdownOptions = {};
+      if (who && typeof who.publicScrutiny === 'boolean') publicScrutinyOn = who.publicScrutiny;
     } else {
       applyList(await api('list'));
     }
@@ -2512,15 +2521,24 @@
     return data;
   }
 
-  // Public, read-only view: same live Form Responses data the page always showed.
-  async function fetchPublic() {
+  // Public, read-only view: the live Form Responses data the page always showed.
+  // With src === 'scrutiny' it asks for the scrutiny done list instead; the server
+  // only answers that while the admin has switched it on for the public.
+  async function fetchPublic(src) {
+    const url = APPS_SCRIPT_URL + (src === 'scrutiny' ? (APPS_SCRIPT_URL.indexOf('?') === -1 ? '?' : '&') + 'source=scrutiny' : '');
     let res;
-    try { res = await fetch(APPS_SCRIPT_URL, { cache: 'no-store' }); }
+    try { res = await fetch(url, { cache: 'no-store' }); }
     catch (e) { throw new Error('Could not reach the server. Check your connection and try again.'); }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     let data;
     try { data = await res.json(); } catch (e) { throw new Error('unexpected reply from the server'); }
+    if (data.ok === false) {
+      const err = new Error(data.error || 'Request failed.');
+      err.code = data.code;
+      throw err;
+    }
     if (!data.records) throw new Error('unexpected reply — make sure the latest Apps Script version is deployed');
+    publicScrutinyAvailable = !!data.scrutinyPublic;
     return data.records;
   }
 
@@ -2535,7 +2553,16 @@
     statusEl.classList.remove('error');
     statusEl.style.display = 'block';
     try {
-      allRecords = await fetchPublic();
+      try {
+        allRecords = await fetchPublic(publicSource);
+      } catch (e) {
+        // The admin switched the scrutiny list off while this person was viewing it: fall back to the original view.
+        if (publicSource === 'scrutiny' && e.code === 'DISABLED') {
+          publicSource = 'original';
+          syncHeaderForMode();
+          allRecords = await fetchPublic('original');
+        } else { throw e; }
+      }
       dropdownOptions = {};
       enterApp();
     } catch (err) {
@@ -2548,6 +2575,7 @@
     allRecords = data.records || [];
     dropdownOptions = data.options || {};
     if (data.user && session) { session.user = data.user; saveSession(); }
+    if (typeof data.publicScrutiny === 'boolean') publicScrutinyOn = data.publicScrutiny;
   }
 
   function redrawKeepingScroll() {
@@ -2609,6 +2637,8 @@
     allRecords = [];
     dropdownOptions = {};
     activeHouse = 'ALL';
+    publicSource = 'original';
+    publicScrutinyOn = false;
     editorState = null;
     facultyUsers = [];
     // Don't leave the previous person's data sitting in the (hidden) page.
@@ -2635,12 +2665,17 @@
   const TEXT_EYEBROW_PUBLIC = document.getElementById('headerEyebrow').textContent;
   const TEXT_SUFFIX_PUBLIC = document.getElementById('headerSuffix').textContent;
   const TAB_TITLE_PUBLIC = document.title;
+  const TEXT_PUBLIC_SCRUTINY_FOOT = 'Data is fetched from the scrutiny done list each time this page loads or is refreshed. This page cannot write, edit or delete anything in the sheet. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.';
+  const TEXT_PUBLIC_SCRUTINY_SUB = 'Read-only view of the corrected list after faculty scrutiny. Search by name, register number or batch, or select a house below. Nothing here can edit the form or the spreadsheet.';
   const TEXT_SIGNED_FOOT = 'Data is fetched from the scrutiny sheet (Sheet1) each time this page loads or is refreshed. Edits made here are written to Sheet1 only — the original Form Responses sheet is never touched. Quota limits shown here are read from the Pratibha 2026-27 event guidelines — double-check anything flagged against the official rules before acting on it.';
 
   // Login button + wording follow the sign-in state (public view keeps the original wording).
   // What the page calls itself: follows who is signed in and which data set is on screen.
   function headerLabels() {
     if (!session) {
+      if (publicSource === 'scrutiny') {
+        return { eyebrow: TEXT_EYEBROW_PUBLIC, suffix: '· Scrutiny Done Registrations', sub: TEXT_PUBLIC_SCRUTINY_SUB };
+      }
       return { eyebrow: TEXT_EYEBROW_PUBLIC, suffix: TEXT_SUFFIX_PUBLIC, sub: TEXT_PUBLIC_SUB };
     }
     if (isFaculty()) {
@@ -2668,28 +2703,97 @@
     document.getElementById('headerEyebrow').textContent = t.eyebrow;
     document.getElementById('headerSuffix').textContent = t.suffix;
     document.getElementById('headerSub').textContent = t.sub;
-    document.getElementById('footerNote').textContent = scrutiny ? TEXT_SIGNED_FOOT : TEXT_PUBLIC_FOOT;
-    document.title = session ? 'Pratibha 2026-27 — ' + t.suffix.replace(/^·\s*/, '') : TAB_TITLE_PUBLIC;
+    document.getElementById('footerNote').textContent = !scrutiny ? TEXT_PUBLIC_FOOT : (session ? TEXT_SIGNED_FOOT : TEXT_PUBLIC_SCRUTINY_FOOT);
+    document.title = (session || scrutiny) ? 'Pratibha 2026-27 — ' + t.suffix.replace(/^·\s*/, '') : TAB_TITLE_PUBLIC;
   }
   document.getElementById('adminLoginBtn').addEventListener('click', () => showLogin());
 
   function renderPublicBar() {
     const bar = document.getElementById('userBar');
+    const scrutiny = publicSource === 'scrutiny';
     bar.innerHTML = `
-      <span>Public view · live form responses (read-only)</span>
+      <span>${scrutiny ? 'Public view · scrutiny done registrations (read-only)' : 'Public view · live form responses (read-only)'}</span>
+      ${publicScrutinyAvailable ? `<span class="src-switch" role="group" aria-label="Data source">
+        <button type="button" data-src="original" class="${!scrutiny ? 'on' : ''}">Original form responses</button>
+        <button type="button" data-src="scrutiny" class="${scrutiny ? 'on' : ''}">Scrutiny done registrations</button>
+      </span>` : ''}
       <span class="spacer"></span>
-      <button type="button" class="btn-mini" id="refreshBtn">↻ Refresh</button>`;
+      <button type="button" class="btn-mini" id="refreshBtn">↻ Refresh</button>
+      ${publicScrutinyAvailable ? `<div class="src-note">${scrutiny
+        ? 'Showing <b>Scrutiny done registrations</b> — the corrected list after faculty scrutiny. Read-only.'
+        : 'Showing the <b>original form responses</b> (live, read-only) — exactly as students submitted them.'}</div>` : ''}`;
     bar.style.display = 'flex';
+    bar.querySelectorAll('.src-switch button').forEach(b => b.addEventListener('click', () => switchPublicSource(b.dataset.src)));
     document.getElementById('refreshBtn').addEventListener('click', async (e) => {
       const b = e.currentTarget;
       b.disabled = true;
       try {
-        allRecords = await fetchPublic();
+        allRecords = await fetchPublic(publicSource);
+        renderUserBar();
         redrawKeepingScroll();
         toast('Refreshed');
-      } catch (err) { toast(err.message, true); }
+      } catch (err) {
+        if (err.code === 'DISABLED') {
+          publicSource = 'original';
+          toast('The scrutiny done list is no longer available to the public.', true);
+          loadPublic();
+          return;
+        }
+        toast(err.message, true);
+      }
       b.disabled = false;
     });
+  }
+
+  // Public (signed-out) switch between the two read-only lists. Only offered while the admin has it on;
+  // the server enforces that too, so this can never expose Sheet1 by itself.
+  async function switchPublicSource(src) {
+    if (session || publicSource === src) return;
+    const previous = publicSource;
+    publicSource = src;
+    document.querySelectorAll('.src-switch button').forEach(b => { b.disabled = true; });
+    try {
+      allRecords = await fetchPublic(src);
+      dropdownOptions = {};
+      renderUserBar();
+      renderHouseTabs();
+      renderCards();
+    } catch (err) {
+      if (err.code === 'DISABLED') {
+        publicSource = 'original';
+        toast('The scrutiny done list is no longer available to the public.', true);
+        loadPublic();
+        return;
+      }
+      publicSource = previous;
+      renderUserBar();
+      toast(err.message, true);
+    }
+  }
+
+  // Admin only: turn the public read-only "scrutiny done" option on or off.
+  async function togglePublicScrutiny(e) {
+    if (!isAdmin()) return;
+    const btn = e.currentTarget;
+    const next = !publicScrutinyOn;
+    if (next) {
+      const ok = await askConfirm({
+        title: 'Show the scrutiny list to the public?',
+        messageHtml: 'Anyone with the page link will be able to switch to the <b>Scrutiny done registrations</b> and view them. It is <b>read-only</b> — they cannot edit anything. You can turn this off again at any time.',
+        okLabel: 'Show to public'
+      });
+      if (!ok) return;
+    }
+    btn.disabled = true;
+    try {
+      const data = await api('setPublicScrutiny', { enabled: next });
+      publicScrutinyOn = !!data.publicScrutiny;
+      renderUserBar();
+      toast(publicScrutinyOn ? 'The public can now view the scrutiny done list (read-only)' : 'Scrutiny done list hidden from the public');
+    } catch (err) {
+      btn.disabled = false;
+      toast(err.message, true);
+    }
   }
 
   function renderUserBar() {
@@ -2705,7 +2809,8 @@
       ${u.role === 'admin' ? `<span class="src-switch" role="group" aria-label="Data source">
         <button type="button" data-src="original" class="${currentSource() === 'original' ? 'on' : ''}">Original form responses</button>
         <button type="button" data-src="scrutiny" class="${currentSource() === 'scrutiny' ? 'on' : ''}">Scrutiny done registrations</button>
-      </span>` : ''}
+      </span>
+      <button type="button" class="btn-mini pub-toggle${publicScrutinyOn ? ' on' : ''}" id="pubToggleBtn" role="switch" aria-checked="${publicScrutinyOn ? 'true' : 'false'}" title="When on, the public view gets a read-only option to see the scrutiny done registrations"><span class="pub-track"><span class="pub-knob"></span></span>Show scrutiny list to public</button>` : ''}
       <span class="spacer"></span>
       <button type="button" class="btn-mini" id="refreshBtn">↻ Refresh</button>
       ${u.role === 'admin' ? '<button type="button" class="btn-mini" id="manageFacultyBtn">Manage faculty &amp; admins</button>' : ''}
@@ -2727,6 +2832,8 @@
       } catch (err) { toast(err.message, true); }
       b.disabled = false;
     });
+    const pt = document.getElementById('pubToggleBtn');
+    if (pt) pt.addEventListener('click', togglePublicScrutiny);
     const mf = document.getElementById('manageFacultyBtn');
     if (mf) mf.addEventListener('click', openFaculty);
   }
