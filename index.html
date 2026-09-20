@@ -2208,6 +2208,17 @@
     downloadBlob(toCSV(rows, headers), `pratibha-registrations-${suffix}.csv`, 'text/csv');
   }
 
+  // Registration time for the Excel exports: like formatTimestamp() but with
+  // seconds, so people who registered in the same minute can still be told apart.
+  function exportTimestamp(ts) {
+    const d = parseTimestamp(ts);
+    if (!d) return ts || '';
+    return d.toLocaleString(undefined, {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', second: '2-digit'
+    });
+  }
+
   // Excel export: one column per individual event and one per group event
   // ("Yes" where the student registered). Built entirely in the browser from
   // the already-loaded data — nothing is ever sent back to the sheet.
@@ -2233,7 +2244,7 @@
     const indivCols = Array.from(indivSet).sort(sortAZ);
     const groupCols = Array.from(groupSet).sort(sortAZ);
 
-    const baseHeaders = ['Name', 'RegNumber', 'Batch', 'Programme', 'House', 'Gender', 'WhatsApp'];
+    const baseHeaders = ['Name', 'RegNumber', 'Batch', 'Programme', 'House', 'Gender', 'WhatsApp', 'Registered At'];
     const headers = baseHeaders.concat(indivCols, groupCols, ['GroupMembers']);
 
     const rows = filtered.map(r => {
@@ -2241,7 +2252,7 @@
       const group = new Set(collectGroupEvents(r));
       const row = [
         r.name, r.regNumber, r.batch, r.programme,
-        houseLabel(normaliseHouse(r.house)), r.gender, r.whatsapp,
+        houseLabel(normaliseHouse(r.house)), r.gender, r.whatsapp, exportTimestamp(r.timestamp),
       ];
       indivCols.forEach(t => row.push(indiv.has(t) ? 'Yes' : ''));
       groupCols.forEach(t => row.push(group.has(t) ? 'Yes' : ''));
@@ -2251,7 +2262,7 @@
 
     const ws = XLSX.utils.aoa_to_sheet([headers].concat(rows));
     ws['!cols'] = headers.map((h, i) => ({
-      wch: i < baseHeaders.length ? Math.max(14, h.length + 4) : (h === 'GroupMembers' ? 32 : Math.min(30, Math.max(12, h.length + 4)))
+      wch: h === 'Registered At' ? 24 : (i < baseHeaders.length ? Math.max(14, h.length + 4) : (h === 'GroupMembers' ? 32 : Math.min(30, Math.max(12, h.length + 4))))
     }));
 
     // Styling: bold, larger, coloured header row; bordered data rows with light banding
@@ -2320,7 +2331,13 @@
       return houseOk && matchesSearch(r, q);
     });
 
-    const nameCmp = (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+    // First come, first served: earliest registration first. Anyone whose time is
+    // missing/unreadable goes last; equal times keep their order in the sheet.
+    const timeOf = r => { const d = parseTimestamp(r.timestamp); return d ? d.getTime() : Infinity; };
+    const byRegistrationTime = list => list
+      .map((r, i) => ({ r, i, t: timeOf(r) }))
+      .sort((a, b) => (a.t === b.t ? a.i - b.i : (a.t < b.t ? -1 : 1)))
+      .map(x => x.r);
     const houseRank = key => { const i = HOUSES.findIndex(h => h.key === key); return i === -1 ? 99 : i; };
 
     // One block per event (an event name is never both individual and group, but key on both to be safe).
@@ -2341,7 +2358,7 @@
       return;
     }
 
-    const baseHeaders = ['No.', 'Name', 'Reg. Number', 'Batch', 'Programme', 'Gender', 'WhatsApp'];
+    const baseHeaders = ['No.', 'Name', 'Reg. Number', 'Batch', 'Programme', 'Gender', 'WhatsApp', 'Registered At'];
     if (showHouse) baseHeaders.push('House');
     const baseW = baseHeaders.length;
     const hasGroup = events.some(e => e.isGroup);
@@ -2359,13 +2376,12 @@
     const houseName = houseFilter === 'ALL' ? 'All houses' : houseLabel(houseFilter);
     addFullWidth('Pratibha 2026-27 — Event-wise Registrations', 'title');
     addFullWidth('Scrutiny done registrations  ·  House: ' + houseName + '  ·  Generated ' + new Date().toLocaleString(), 'sub');
-    addFullWidth(events.length + (events.length === 1 ? ' event' : ' events') + '  ·  ' + entryCount + ' event registrations' +
+    addFullWidth(events.length + (events.length === 1 ? ' event' : ' events') + '  ·  ' + entryCount + ' event registrations  ·  Each event is listed in order of registration time (first come, first served)' +
       (q ? '  ·  Filtered by search: "' + q + '"' : ''), 'sub');
     add([], 'blank');
 
     events.forEach(ev => {
-      const recs = ev.records.slice().sort((a, b) =>
-        (showHouse ? houseRank(normaliseHouse(a.house)) - houseRank(normaliseHouse(b.house)) : 0) || nameCmp(a, b));
+      const recs = byRegistrationTime(ev.records);
       const limit = EVENT_LIMITS[ev.tag];
       const perHouse = {};
       recs.forEach(r => { const h = normaliseHouse(r.house); perHouse[h] = (perHouse[h] || 0) + 1; });
@@ -2386,7 +2402,7 @@
       add(headers, 'header', { width });
 
       recs.forEach((r, i) => {
-        const cells = [i + 1, r.name || '', r.regNumber || '', r.batch || '', r.programme || '', r.gender || '', r.whatsapp || ''];
+        const cells = [i + 1, r.name || '', r.regNumber || '', r.batch || '', r.programme || '', r.gender || '', r.whatsapp || '', exportTimestamp(r.timestamp)];
         if (showHouse) cells.push(houseLabel(normaliseHouse(r.house)));
         if (ev.isGroup) cells.push((r.groupMembers || '').trim());
         add(cells, 'data', { width, idx: i });
@@ -2399,7 +2415,7 @@
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: totalW - 1 } });
     ws['!merges'] = merges;
-    const colWidths = [6, 28, 16, 14, 28, 10, 16];
+    const colWidths = [6, 28, 16, 14, 28, 10, 16, 24];
     if (showHouse) colWidths.push(14);
     if (hasGroup) colWidths.push(46);
     ws['!cols'] = colWidths.map(w => ({ wch: w }));
@@ -2453,9 +2469,17 @@
   }
 
   function printScrutinyReport() {
-    const quota = computeQuotaFlags();
-    const students = computeStudentFlags();
-    const dupes = computeDuplicateFlags();
+    // Same house filtering the on-screen panels use, so the printout matches
+    // what is shown for the selected house tab (or all houses).
+    const allQuota = computeQuotaFlags();
+    const allStudents = computeStudentFlags();
+    const allDupes = computeDuplicateFlags();
+    const quota = activeHouse === 'ALL' ? allQuota : allQuota.filter(f => f.house === activeHouse);
+    const students = activeHouse === 'ALL' ? allStudents : allStudents.filter(f => f.house === activeHouse);
+    const dupes = activeHouse === 'ALL' ? allDupes : allDupes
+      .map(d => ({ ...d, records: d.records.filter(r => normaliseHouse(r.house) === activeHouse) }))
+      .filter(d => d.records.length > 1);
+    const reportHouse = activeHouse === 'ALL' ? 'All houses' : houseLabel(activeHouse);
 
     const esc = escapeHtml;
     let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pratibha 2026-27 — Scrutiny Report</title>
@@ -2471,7 +2495,7 @@
         @media print{ a{color:inherit;text-decoration:none;} }
       </style></head><body>
       <h1>Pratibha 2026-27 — Scrutiny Report</h1>
-      <p class="muted">Generated ${esc(new Date().toLocaleString())} from the live registration sheet. Read-only audit — does not reflect any merges or cancellations coordinators may have already made.</p>
+      <p class="muted">House: <b>${esc(reportHouse)}</b> · Generated ${esc(new Date().toLocaleString())} from the live registration sheet. Read-only audit — does not reflect any merges or cancellations coordinators may have already made.</p>
 
       <h2>Quota breaches (${quota.length})</h2>
       ${quota.length ? `<table><tr><th>House</th><th>Event</th><th>Count / Cap</th><th>Excess registrations (submission order)</th></tr>
