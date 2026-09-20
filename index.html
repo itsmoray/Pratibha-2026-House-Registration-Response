@@ -1510,6 +1510,7 @@
         <option value="event">Sort: by event</option>
       </select>
       <button class="toolbar-btn" id="exportExcelBtn" type="button">Export Excel</button>
+      <button class="toolbar-btn" id="exportByEventBtn" type="button" style="display:none;" title="Excel report grouped event by event (scrutiny done registrations)">Export by event</button>
       <button class="toolbar-btn" id="printReportBtn" type="button">Print scrutiny report</button>
       <div class="count-pill" id="countPill"></div>
     </div>
@@ -2288,6 +2289,169 @@
     XLSX.writeFile(wb, `pratibha-registrations-${suffix}.xlsx`);
   }
 
+  // ── Event-wise Excel report ────────────────────────────────────────
+  // For signed-in admins and faculty, on the "Scrutiny done registrations"
+  // list only (never the original form responses, never the public view).
+  // One sheet, one block per event (A–Z, same order as "Sort: by event"):
+  // banner, info line, then the table of registrations for that event.
+  // A faculty member's export is always pinned to their own house (the server
+  // also only sends them their own house's rows). Built entirely in the
+  // browser from the already-loaded data — nothing is written back.
+  function canExportByEvent() {
+    return !!session && currentSource() === 'scrutiny';
+  }
+
+  function syncEventExportBtn() {
+    const btn = document.getElementById('exportByEventBtn');
+    if (btn) btn.style.display = canExportByEvent() ? '' : 'none';
+  }
+
+  function exportByEventExcel() {
+    if (!canExportByEvent()) return;
+    if (typeof XLSX === 'undefined') {
+      alert('Excel export library could not be loaded. Check your internet connection and reload the page.');
+      return;
+    }
+    const q = document.getElementById('searchInput').value.trim();
+    const houseFilter = isFaculty() ? session.user.house : activeHouse;
+    const showHouse = houseFilter === 'ALL';
+    const filtered = allRecords.filter(r => {
+      const houseOk = houseFilter === 'ALL' || normaliseHouse(r.house) === houseFilter;
+      return houseOk && matchesSearch(r, q);
+    });
+
+    const nameCmp = (a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+    const houseRank = key => { const i = HOUSES.findIndex(h => h.key === key); return i === -1 ? 99 : i; };
+
+    // One block per event (an event name is never both individual and group, but key on both to be safe).
+    const blocks = {};
+    let entryCount = 0;
+    filtered.forEach(r => {
+      collectAllEventEntries(r).forEach(({ tag, isGroup }) => {
+        const key = (isGroup ? 'G|' : 'I|') + tag;
+        if (!blocks[key]) blocks[key] = { tag, isGroup, records: [] };
+        blocks[key].records.push(r);
+        entryCount++;
+      });
+    });
+    const events = Object.keys(blocks).map(k => blocks[k])
+      .sort((a, b) => a.tag.localeCompare(b.tag) || (Number(a.isGroup) - Number(b.isGroup)));
+    if (!events.length) {
+      toast('There are no event registrations to export for this selection.', true);
+      return;
+    }
+
+    const baseHeaders = ['No.', 'Name', 'Reg. Number', 'Batch', 'Programme', 'Gender', 'WhatsApp'];
+    if (showHouse) baseHeaders.push('House');
+    const baseW = baseHeaders.length;
+    const hasGroup = events.some(e => e.isGroup);
+    const totalW = baseW + (hasGroup ? 1 : 0); // last column = team members (group events only)
+
+    const aoa = [];
+    const meta = [];
+    const merges = [];
+    const add = (cells, type, extra) => { aoa.push(cells); meta.push(Object.assign({ type }, extra || {})); return aoa.length - 1; };
+    const addFullWidth = (text, type) => {
+      const r = add([text], type);
+      merges.push({ s: { r, c: 0 }, e: { r, c: totalW - 1 } });
+    };
+
+    const houseName = houseFilter === 'ALL' ? 'All houses' : houseLabel(houseFilter);
+    addFullWidth('Pratibha 2026-27 — Event-wise Registrations', 'title');
+    addFullWidth('Scrutiny done registrations  ·  House: ' + houseName + '  ·  Generated ' + new Date().toLocaleString(), 'sub');
+    addFullWidth(events.length + (events.length === 1 ? ' event' : ' events') + '  ·  ' + entryCount + ' event registrations' +
+      (q ? '  ·  Filtered by search: "' + q + '"' : ''), 'sub');
+    add([], 'blank');
+
+    events.forEach(ev => {
+      const recs = ev.records.slice().sort((a, b) =>
+        (showHouse ? houseRank(normaliseHouse(a.house)) - houseRank(normaliseHouse(b.house)) : 0) || nameCmp(a, b));
+      const limit = EVENT_LIMITS[ev.tag];
+      const perHouse = {};
+      recs.forEach(r => { const h = normaliseHouse(r.house); perHouse[h] = (perHouse[h] || 0) + 1; });
+      const houseKeys = Object.keys(perHouse).sort((a, b) => houseRank(a) - houseRank(b));
+      const over = !!limit && houseKeys.some(h => perHouse[h] > limit.max);
+
+      let info = recs.length + (recs.length === 1 ? ' registration' : ' registrations');
+      if (showHouse) info += '  —  ' + houseKeys.map(h => houseLabel(h) + ': ' + perHouse[h] + (limit ? '/' + limit.max : '')).join(', ');
+      info += limit ? '   |   Limit: max ' + limit.max + ' ' + limit.unit + ' per house' : '   |   No per-house limit';
+      if (over) info += '   |   OVER LIMIT';
+
+      addFullWidth(ev.tag + (ev.isGroup ? '   (Group event)' : ''), 'banner');
+      addFullWidth(info, over ? 'infoOver' : 'info');
+
+      const width = ev.isGroup ? totalW : baseW;
+      const headers = baseHeaders.slice();
+      if (ev.isGroup) { headers[1] = 'Team Leader'; headers.push('Team Members'); }
+      add(headers, 'header', { width });
+
+      recs.forEach((r, i) => {
+        const cells = [i + 1, r.name || '', r.regNumber || '', r.batch || '', r.programme || '', r.gender || '', r.whatsapp || ''];
+        if (showHouse) cells.push(houseLabel(normaliseHouse(r.house)));
+        if (ev.isGroup) cells.push((r.groupMembers || '').trim());
+        add(cells, 'data', { width, idx: i });
+      });
+      add([], 'blank');
+    });
+    aoa.pop(); // no blank row after the last event
+    meta.pop();
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: totalW - 1 } });
+    ws['!merges'] = merges;
+    const colWidths = [6, 28, 16, 14, 28, 10, 16];
+    if (showHouse) colWidths.push(14);
+    if (hasGroup) colWidths.push(46);
+    ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+    // Styling: same purple palette as the other Excel export
+    const line = { style: 'thin', color: { rgb: 'BFBFBF' } };
+    const border = { top: line, bottom: line, left: line, right: line };
+    const fill = rgb => ({ patternType: 'solid', fgColor: { rgb } });
+    const styleFor = (m, c) => {
+      switch (m.type) {
+        case 'title':
+          return { font: { name: 'Calibri', sz: 16, bold: true, color: { rgb: '5B3A8C' } }, alignment: { horizontal: 'left', vertical: 'center' } };
+        case 'sub':
+          return { font: { name: 'Calibri', sz: 11, color: { rgb: '555555' } }, alignment: { horizontal: 'left', vertical: 'center' } };
+        case 'banner':
+          return { font: { name: 'Calibri', sz: 14, bold: true, color: { rgb: 'FFFFFF' } }, fill: fill('5B3A8C'),
+                   alignment: { horizontal: 'left', vertical: 'center', indent: 1 }, border };
+        case 'info':
+          return { font: { name: 'Calibri', sz: 11, italic: true, color: { rgb: '3D2666' } }, fill: fill('E9E0F5'),
+                   alignment: { horizontal: 'left', vertical: 'center', indent: 1 }, border };
+        case 'infoOver':
+          return { font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'C62828' } }, fill: fill('FDE7E7'),
+                   alignment: { horizontal: 'left', vertical: 'center', indent: 1 }, border };
+        case 'header':
+          return { font: { name: 'Calibri', sz: 12, bold: true, color: { rgb: 'FFFFFF' } }, fill: fill('8E6BBF'),
+                   alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border };
+        default: { // data row
+          const isMembers = m.width === totalW && hasGroup && c === totalW - 1;
+          return { font: { name: 'Calibri', sz: 11, color: { rgb: '000000' } }, fill: fill(m.idx % 2 === 1 ? 'F3EEF9' : 'FFFFFF'),
+                   alignment: { horizontal: (c === 0 || c === 5) ? 'center' : 'left', vertical: 'center', wrapText: isMembers || c === 4 }, border };
+        }
+      }
+    };
+    const rowHeights = { title: 30, banner: 26, info: 20, infoOver: 20, header: 22 };
+    ws['!rows'] = [];
+    meta.forEach((m, r) => {
+      if (m.type === 'blank') return;
+      const width = (m.type === 'data' || m.type === 'header') ? m.width : totalW;
+      for (let c = 0; c < width; c++) {
+        const ref = XLSX.utils.encode_cell({ r, c });
+        const cell = ws[ref] || (ws[ref] = { t: 's', v: '' });
+        cell.s = styleFor(m, c);
+      }
+      if (rowHeights[m.type]) ws['!rows'][r] = { hpt: rowHeights[m.type] };
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Events Report');
+    const suffix = (houseFilter === 'ALL' ? 'all-houses' : houseFilter.toLowerCase()) + '-scrutiny-done' + (q ? '-filtered' : '');
+    XLSX.writeFile(wb, `pratibha-events-${suffix}.xlsx`);
+  }
+
   function printScrutinyReport() {
     const quota = computeQuotaFlags();
     const students = computeStudentFlags();
@@ -2401,6 +2565,7 @@
     renderCards();
   });
   document.getElementById('exportExcelBtn').addEventListener('click', exportFilteredExcel);
+  document.getElementById('exportByEventBtn').addEventListener('click', exportByEventExcel);
   document.getElementById('printReportBtn').addEventListener('click', printScrutinyReport);
 
   // ══════════════════════════════════════════════════════════════════
@@ -2799,6 +2964,7 @@
 
   function renderUserBar() {
     syncHeaderForMode();
+    syncEventExportBtn();
     if (!session) { renderPublicBar(); return; }
     const u = session.user;
     const bar = document.getElementById('userBar');
