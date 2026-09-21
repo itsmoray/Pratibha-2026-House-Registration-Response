@@ -1652,6 +1652,7 @@
     <div id="quotaPanel"></div>
     <div id="studentFlagsPanel"></div>
     <div id="duplicatesPanel"></div>
+    <div id="detailFlagsPanel"></div>
 
     <div class="cards" id="cards"></div>
     <div class="event-groups" id="eventGroups" style="display:none;"></div>
@@ -1783,7 +1784,7 @@
     }
     if (!session) session = readSavedSession();
     if (!session) { await loadPublic(); return; }
-    if (isFaculty()) activeHouse = session.user.house;
+    if (isHouseFaculty()) activeHouse = session.user.house;
     statusEl.textContent = 'Loading registrations…';
     statusEl.classList.remove('error');
     statusEl.style.display = 'block';
@@ -1810,12 +1811,12 @@
     const wrap = document.getElementById('houseTabs');
     wrap.innerHTML = '';
 
-    if (!isFaculty()) {
+    if (!isHouseFaculty()) {
       const allTab = makeTab('ALL', 'All houses', counts.ALL, null);
       wrap.appendChild(allTab);
     }
 
-    HOUSES.filter(h => !isFaculty() || h.key === session.user.house).forEach(h => {
+    HOUSES.filter(h => !isHouseFaculty() || h.key === session.user.house).forEach(h => {
       wrap.appendChild(makeTab(h.key, h.label, counts[h.key] || 0, h.varName));
     });
   }
@@ -1959,11 +1960,14 @@
   function computeStudentFlags() {
     const flags = [];
     allRecords.forEach(r => {
-      const entries = collectAllEventEntries(r);
-      const cappedCount = entries.filter(e => e.tag !== 'Short Film (Director)').length;
-      const groupCount = entries.filter(e => e.isGroup).length;
+      const entries = collectStageEntries(r); // Short Film is never included
+      const onCount = entries.filter(e => e.stage === 'on').length;
+      const offCount = entries.filter(e => e.stage === 'off').length;
+      const cappedCount = onCount + offCount;
+      const groupCount = entries.filter(e => e.isGroup && e.stage === 'on').length;
       const issues = [];
       if (cappedCount > 5) issues.push(cappedCount + ' events registered (max 5, Short Film excluded)');
+      else if (offCount > 3 || onCount > 3) issues.push(offCount + ' off-stage + ' + onCount + ' on-stage events (allowed: 3 off-stage + 2 on-stage, or 2 off-stage + 3 on-stage)');
       if (groupCount > 2) issues.push(groupCount + ' on-stage group events (max 2)');
       if (issues.length) flags.push({ r, house: normaliseHouse(r.house), issues });
     });
@@ -1985,6 +1989,278 @@
     Object.keys(byReg).forEach(k => { if (byReg[k].length > 1) dupes.push({ type: 'Register Number', value: k, records: byReg[k] }); });
     Object.keys(byEmail).forEach(k => { if (byEmail[k].length > 1) dupes.push({ type: 'Email', value: k, records: byEmail[k] }); });
     return dupes;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Extra guideline checks (PRATIBHA 2026-27 rules): on-/off-stage mix,
+  // house vs programme, team size and team members, unmatched event names.
+  // Read-only: these only look at the loaded data and never write anything.
+  // ══════════════════════════════════════════════════════════════════
+  const FEST_YEAR = 2026;   // odd semesters running during the fest: 2026 batch = S1, 2025 = S3, 2024 = S5, 2023 = S7
+
+  // Team size INCLUDING the team leader, from the event rules (PAF 04, 05, 14, 15, 37, 41, 46, 48, 49).
+  const TEAM_SIZE = {
+    'Group song ( Indian )': { min: 6, max: 8 },
+    'Group song ( Western )': { min: 6, max: 8 },
+    'Group Dance ( Folk )': { min: 6, max: 8 },
+    'Group Dance ( Classical/Semi-Classical/Western/Contemporary )': { min: 6, max: 8 },
+    'Mime': { min: 3, max: 6 },
+    'Debate ( English )': { min: 5, max: 5 },
+    'Rangoli': { min: 2, max: 2 },
+    'Collage': { min: 2, max: 2 },
+    'Mehendi Designing': { min: 2, max: 2 },
+  };
+
+  // Which house each programme belongs to (Part I table of the guidelines).
+  // sems = semesters that house takes (omit = all); pp = the "PP campus" entry of Nishadam.
+  const PROGRAMME_RULES = {
+    CSE:        [{ house: 'SHADJAM',   sems: [1, 3, 5, 7] }],
+    AIML:       [{ house: 'RISHABHAM', sems: [1, 3, 5, 7] }],
+    DSCY:       [{ house: 'RISHABHAM', sems: [3] }],
+    DS:         [{ house: 'GANDHARAM', sems: [1, 5] }],
+    CY:         [{ house: 'GANDHARAM', sems: [1, 5] }],
+    BSCAP:      [{ house: 'GANDHARAM' }, { house: 'NISHADAM', pp: true }],
+    BSCBED:     [{ house: 'GANDHARAM' }],
+    BABED:      [{ house: 'GANDHARAM' }],
+    BASANSKRIT: [{ house: 'GANDHARAM' }],
+    MASANSKRIT: [{ house: 'GANDHARAM' }],
+    BBA:        [{ house: 'MADHYAMAM', sems: [1, 3, 5] }, { house: 'NISHADAM', pp: true }],
+    ECE:        [{ house: 'MADHYAMAM', sems: [1, 3, 5] }],
+    BSCCS:      [{ house: 'MADHYAMAM', sems: [5] }],
+    BCA:        [{ house: 'PANCHAMAM', sems: [1, 3] }, { house: 'DHAIVATAM', sems: [5] }],
+    MBA:        [{ house: 'PANCHAMAM', sems: [1, 3] }],
+    BCOM:       [{ house: 'DHAIVATAM', sems: [5] }, { house: 'NISHADAM', pp: true }],
+    MSCAP:      [{ house: 'NISHADAM' }],
+    MSCCP:      [{ house: 'NISHADAM' }],
+  };
+
+  // Fine-art / photography events count as OFF-stage; everything else in the
+  // individual and group columns (music, dance, theatre, debate, mime...) is ON-stage.
+  const OFF_STAGE_NAME = /water\s*colou?r|pencil|clay|rangoli|collage|mehend|mehnd|photograph/i;
+  function stageOfName(tag) { return OFF_STAGE_NAME.test(tag) ? 'off' : 'on'; }
+
+  // Every event a student registered for, tagged on-/off-stage and group/individual,
+  // read column by column (so the same word in two columns is never merged into one).
+  // Short Film is left out on purpose: the rules exempt it from the 5-event limit.
+  function collectStageEntries(r) {
+    const out = [];
+    const add = (tag, col, stage, isGroup) => out.push({ tag, col, stage, isGroup });
+    ['poetryWriting', 'shortStoryWriting', 'essayWriting', 'fineArtsEvent']
+      .forEach(f => splitList(r[f]).forEach(t => add(t, f, 'off', false)));
+    ['elocution', 'recitation']
+      .forEach(f => splitList(r[f]).forEach(t => add(t, f, 'on', false)));
+    if (String(r.geethaChanting || '').trim().toLowerCase() === 'participating') add('Geetha Chanting', 'geethaChanting', 'on', false);
+    splitList(r.individualEvents).forEach(t => add(t, 'individualEvents', stageOfName(t), false));
+    splitList(r.groupEvents).forEach(t => add(t, 'groupEvents', stageOfName(t), true));
+    return out;
+  }
+
+  function programmeKeyOf(programme) {
+    const c = String(programme || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (/^BSCBED/.test(c)) return 'BSCBED';
+    if (/^BABED/.test(c)) return 'BABED';
+    if (/^BASANSKRIT/.test(c)) return 'BASANSKRIT';
+    if (/^MASANSKRIT/.test(c)) return 'MASANSKRIT';
+    if (/^BSC(AP|APPLIED)/.test(c)) return 'BSCAP';
+    if (/^MSC(AP|APPLIED)/.test(c)) return 'MSCAP';
+    if (/^MSCCP/.test(c)) return 'MSCCP';
+    if (/^BSC(CS|COMPUTER)/.test(c)) return 'BSCCS';
+    if (/^BTECH/.test(c)) {
+      const rest = c.slice(5);
+      if (/AIML|ARTIFICIAL/.test(rest)) return 'AIML';
+      if (/DSCY|DATASCIENCE.*CYBER|CYBER.*DATASCIENCE/.test(rest)) return 'DSCY';
+      if (/^(CSE|COMPUTERSCIENCE)/.test(rest)) return 'CSE';
+      if (/^(ECE|ELECTRONICS)/.test(rest)) return 'ECE';
+      if (/^(DS|DATASCIENCE)/.test(rest)) return 'DS';
+      if (/^(CY|CYBER)/.test(rest)) return 'CY';
+      return null;
+    }
+    if (/^BBA/.test(c)) return 'BBA';
+    if (/^BCA/.test(c)) return 'BCA';
+    if (/^BCOM/.test(c)) return 'BCOM';
+    if (/^MBA/.test(c)) return 'MBA';
+    return null;
+  }
+
+  // Semester: an explicit "S5" / "Sem 5" in the programme or batch text, else worked out from
+  // the batch year (or the first two digits of the register number). null = can't tell.
+  function semesterOf(r) {
+    const txt = String(r.programme || '') + ' ' + String(r.batch || '');
+    let m = txt.match(/(?:^|[^A-Za-z])S(?:EM(?:ESTER)?)?\.?\s*-?\s*([1-8])(?![0-9])/i) || txt.match(/([1-8])(?:st|nd|rd|th)?\s*sem/i);
+    if (m) return +m[1];
+    const fromYear = y => { const s = (FEST_YEAR - y) * 2 + 1; return s >= 1 && s <= 8 ? s : null; };
+    const by = String(r.batch || '').match(/(?:^|[^0-9])(20[0-9]{2})(?![0-9])/);
+    let s = by ? fromYear(+by[1]) : null;
+    if (s === null) {
+      const rn = String(r.regNumber || '').trim();
+      if (/^[0-9]{8,10}$/.test(rn)) s = fromYear(2000 + Number(rn.slice(0, 2)));
+    }
+    return s;
+  }
+
+  // Houses this student's programme (and semester / campus) may register under, or null when we can't tell.
+  function expectedHouses(r) {
+    const rules = PROGRAMME_RULES[programmeKeyOf(r.programme)];
+    if (!rules) return null;
+    const sem = semesterOf(r);
+    const pp = /\bpp\b/i.test(String(r.campus || ''));
+    let use = rules.filter(x => !x.sems || sem === null || x.sems.includes(sem));
+    if (pp && rules.some(x => x.pp)) use = use.filter(x => x.pp);
+    if (!use.length) return null;
+    return { houses: Array.from(new Set(use.map(x => x.house))), sem };
+  }
+
+  function normPerson(s) { return String(s || '').toLowerCase().replace(/[^\p{L}]/gu, ''); }
+
+  // The team leader types the other members' names in one box — split it into names.
+  function parseTeamMembers(text) {
+    const out = [], seen = new Set();
+    String(text || '').split(/[\n\r;,&]+|\band\b/i).forEach(seg => {
+      const s = seg
+        .replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/, '')
+        .replace(/^\s*(team\s*)?(members?|names?)\s*[:\-–]\s*/i, '')
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/[0-9_\/\\|:+]+/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+      const key = normPerson(s);
+      if (key.length >= 3 && !seen.has(key)) { seen.add(key); out.push({ raw: s, key }); }
+    });
+    return out;
+  }
+
+  function computeDetailFlags() {
+    const perRecord = new Map();   // record -> [issue text]
+    const addIssue = (r, text) => {
+      if (!perRecord.has(r)) perRecord.set(r, []);
+      const list = perRecord.get(r);
+      if (!list.includes(text)) list.push(text);
+    };
+    const teams = [];              // one entry per (leader, group event)
+
+    allRecords.forEach(r => {
+      const hk = normaliseHouse(r.house);
+      const houseKnown = HOUSES.some(h => h.key === hk);
+      if (!houseKnown) addIssue(r, 'House "' + ((r.house || '').trim() || 'blank') + '" is not one of the seven houses');
+      if (!(r.name || '').trim()) addIssue(r, 'Name is missing');
+      if (!(r.regNumber || '').trim()) addIssue(r, 'Register number is missing');
+
+      const exp = expectedHouses(r);
+      if (houseKnown && exp && !exp.houses.includes(hk)) {
+        addIssue(r, 'Programme "' + (r.programme || '').trim() + '"' + (exp.sem ? ' (S' + exp.sem + ')' : '') +
+          ' belongs to ' + exp.houses.map(houseLabel).join(' / ') + ', but this student registered under ' + houseLabel(hk));
+      }
+
+      const groups = collectStageEntries(r).filter(e => e.isGroup);
+      if (!groups.length) return;
+      const members = parseTeamMembers(r.groupMembers);
+      const tagList = groups.map(g => g.tag).join(', ');
+      if (!members.length) {
+        addIssue(r, 'Group event registered (' + tagList + ') but no team members are listed');
+      } else if (groups.length === 1 && TEAM_SIZE[groups[0].tag]) {
+        // Size check only when the leader has ONE group event, so the member list clearly belongs to it.
+        // Unsure whether the leader typed their own name too, so only flag when both readings are out of range.
+        const size = TEAM_SIZE[groups[0].tag];
+        const me = normPerson(r.name);
+        const reg = String(r.regNumber || '').trim();
+        const leaderListed = (reg && String(r.groupMembers || '').includes(reg)) ||
+          (me.length >= 3 && members.some(m => m.key === me || m.key.includes(me) || me.includes(m.key)));
+        const lo = members.length, hi = members.length + (leaderListed ? 0 : 1);
+        const want = size.min === size.max ? String(size.min) : size.min + '–' + size.max;
+        if (hi < size.min) addIssue(r, groups[0].tag + ': only ' + members.length + ' name' + (members.length === 1 ? '' : 's') + ' listed' + (leaderListed ? '' : ' (plus the leader)') + ' — team needs ' + want + ' members');
+        else if (lo > size.max) addIssue(r, groups[0].tag + ': ' + members.length + ' names listed' + (leaderListed ? '' : ' (plus the leader)') + ' — team allows at most ' + size.max + ' members');
+      }
+      groups.forEach(g => teams.push({ r, tag: g.tag, stage: g.stage, house: hk, members, single: groups.length === 1 }));
+    });
+
+    // Same person in two different teams of the SAME event = multiple entries / duplicate team.
+    const byTag = {};
+    teams.forEach(t => { (byTag[t.tag] = byTag[t.tag] || []).push(t); });
+    Object.keys(byTag).forEach(tag => {
+      const list = byTag[tag];
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i], b = list[j];
+          if (a.r === b.r) continue;
+          const shared = [];
+          const aKey = normPerson(a.r.name), bKey = normPerson(b.r.name);
+          if (aKey.length >= 3 && b.single && b.members.some(m => m.key === aKey)) shared.push(a.r.name);
+          if (bKey.length >= 3 && a.single && a.members.some(m => m.key === bKey)) shared.push(b.r.name);
+          if (a.single && b.single) a.members.forEach(m => { if (b.members.some(n => n.key === m.key)) shared.push(m.raw); });
+          if (!shared.length) continue;
+          const names = Array.from(new Set(shared)).join(', ');
+          addIssue(a.r, tag + ': ' + names + ' also appears in the team led by ' + (b.r.name || '—') + ' — possible duplicate team entry');
+          addIssue(b.r, tag + ': ' + names + ' also appears in the team led by ' + (a.r.name || '—') + ' — possible duplicate team entry');
+        }
+      }
+    });
+
+    const items = [];
+    perRecord.forEach((issues, r) => items.push({ r, house: normaliseHouse(r.house), title: '', issues }));
+
+    // A student named as a MEMBER in teams (so no registration row of their own tells us) still may not be in
+    // more than two on-stage group events. Only member appearances add new information here.
+    const person = new Map();
+    const touch = (key, name) => { if (!person.has(key)) person.set(key, { name, own: new Set(), asMember: new Map(), house: '' }); return person.get(key); };
+    teams.filter(t => t.stage === 'on').forEach(t => {
+      const k = normPerson(t.r.name);
+      if (k.length >= 3) { const p = touch(k, t.r.name); p.own.add(t.tag); p.house = p.house || t.house; }
+    });
+    teams.filter(t => t.stage === 'on' && t.single).forEach(t => {
+      t.members.forEach(m => {
+        const p = touch(m.key, m.raw);
+        p.asMember.set(t.tag + '|' + recordKey(t.r), t.tag + ' (team led by ' + (t.r.name || '—') + ')');
+        p.house = p.house || t.house;
+      });
+    });
+    person.forEach(p => {
+      const total = p.own.size + p.asMember.size;
+      if (p.asMember.size && total > 2) {
+        const parts = Array.from(p.own).map(t => t + ' (leader)').concat(Array.from(p.asMember.values()));
+        items.push({ r: null, house: p.house, title: 'Team member: ' + p.name,
+          issues: [total + ' on-stage group events (max 2): ' + parts.join('; ')] });
+      }
+    });
+
+    // Event names that don't match any known cap — those are NOT being checked against a per-house limit.
+    const unknown = {};
+    allRecords.forEach(r => collectStageEntries(r).forEach(e => {
+      if (['poetryWriting', 'shortStoryWriting', 'essayWriting'].includes(e.col)) return; // no cap by the rules
+      if (EVENT_LIMITS[e.tag] || /photograph/i.test(e.tag)) return;                     // known cap / no cap
+      unknown[e.tag] = (unknown[e.tag] || 0) + 1;
+    }));
+    Object.keys(unknown).sort().forEach(tag => items.push({
+      r: null, house: '', title: 'Event name not recognised',
+      issues: ['"' + tag + '" (' + unknown[tag] + ' registration' + (unknown[tag] === 1 ? '' : 's') + ') does not match any event in the guidelines list, so its per-house cap is not being checked']
+    }));
+
+    const rank = k => { const i = HOUSES.findIndex(h => h.key === k); return i === -1 ? 99 : i; };
+    items.sort((a, b) => rank(a.house) - rank(b.house) || ((a.r ? a.r.name : a.title) || '').localeCompare((b.r ? b.r.name : b.title) || ''));
+    return items;
+  }
+
+  function renderDetailFlagsPanel() {
+    const all = computeDetailFlags();
+    const items = activeHouse === 'ALL' ? all : all.filter(i => i.house === activeHouse);
+    const panel = document.getElementById('detailFlagsPanel');
+    if (items.length === 0) {
+      panel.innerHTML = '';
+      return;
+    }
+    panel.innerHTML = `
+      <div class="quota-panel">
+        <h2><span class="flag-icon">⚑</span> ${items.length} other guideline flag${items.length === 1 ? '' : 's'}</h2>
+        <p class="hint">Checked against the guidelines: house vs. programme, team size and team members, and event names that don't match the rules. These depend on what was typed in the form (programme, batch, member names), so verify before acting.</p>
+        <ul class="quota-list">
+          ${items.map(i => `
+            <li>
+              ${i.house ? `<span class="qhouse" style="--dot:var(${houseVar(i.house)})">${escapeHtml(houseLabel(i.house))}</span>` : `<span class="qhouse">All houses</span>`}
+              <span class="qevent">${i.r
+                ? `<button type="button" class="jump-link" data-key="${escapeAttr(recordKey(i.r))}">${escapeHtml(i.r.name || '—')} <span style="color:var(--muted);font-size:0.8em;">(${escapeHtml(i.r.regNumber || '')})</span></button>`
+                : escapeHtml(i.title)}</span>
+              <span class="excess-names">${i.issues.map(escapeHtml).join(' · ')}</span>
+            </li>`).join('')}
+        </ul>
+      </div>`;
   }
 
   function renderQuotaPanel() {
@@ -2028,7 +2304,7 @@
     panel.innerHTML = `
       <div class="quota-panel">
         <h2><span class="flag-icon">⚑</span> ${flags.length} student-level limit flag${flags.length === 1 ? '' : 's'}</h2>
-        <p class="hint">Per-student caps from the registration rules: max 5 events total (Short Film excluded), max 2 on-stage group events.</p>
+        <p class="hint">Per-student caps from the registration rules: max 5 events total (Short Film excluded), only 3 off-stage + 2 on-stage or 2 off-stage + 3 on-stage, max 2 on-stage group events.</p>
         <ul class="quota-list">
           ${flags.map(f => `
             <li>
@@ -2087,6 +2363,7 @@
     renderQuotaPanel();
     renderStudentFlagsPanel();
     renderDuplicatesPanel();
+    renderDetailFlagsPanel();
 
     const q = document.getElementById('searchInput').value.trim();
     const filtered = allRecords.filter(r => {
@@ -2268,7 +2545,7 @@
       if (sel) sel.value = 'registrant';
       needsRerender = true;
     }
-    const homeHouse = isFaculty() ? session.user.house : 'ALL';
+    const homeHouse = isHouseFaculty() ? session.user.house : 'ALL';
     if (activeHouse !== homeHouse) {
       activeHouse = homeHouse;
       needsRerender = true;
@@ -2464,7 +2741,7 @@
       return;
     }
     const q = document.getElementById('searchInput').value.trim();
-    const houseFilter = isFaculty() ? session.user.house : activeHouse;
+    const houseFilter = isHouseFaculty() ? session.user.house : activeHouse;
     const showHouse = houseFilter === 'ALL';
     const filtered = allRecords.filter(r => {
       const houseOk = houseFilter === 'ALL' || normaliseHouse(r.house) === houseFilter;
@@ -2619,6 +2896,8 @@
     const dupes = activeHouse === 'ALL' ? allDupes : allDupes
       .map(d => ({ ...d, records: d.records.filter(r => normaliseHouse(r.house) === activeHouse) }))
       .filter(d => d.records.length > 1);
+    const allDetails = computeDetailFlags();
+    const details = activeHouse === 'ALL' ? allDetails : allDetails.filter(i => i.house === activeHouse);
     const reportHouse = activeHouse === 'ALL' ? 'All houses' : houseLabel(activeHouse);
 
     const esc = escapeHtml;
@@ -2650,6 +2929,11 @@
       <h2>Duplicate entries (${dupes.length})</h2>
       ${dupes.length ? `<table><tr><th>Matched on</th><th>Value</th><th>Registrations</th></tr>
         ${dupes.map(d => `<tr><td>${esc(d.type)}</td><td>${esc(d.value)}</td><td>${d.records.map(r => esc((r.name || '—') + ' — ' + (r.regNumber || '') + ' — ' + houseLabel(normaliseHouse(r.house)))).join('<br>')}</td></tr>`).join('')}
+        </table>` : `<p class="none">None found.</p>`}
+
+      <h2>Other guideline flags (${details.length})</h2>
+      ${details.length ? `<table><tr><th>Who / what</th><th>House</th><th>Issue</th></tr>
+        ${details.map(i => `<tr><td>${esc(i.r ? (i.r.name || '—') + ' — ' + (i.r.regNumber || '') : i.title)}</td><td>${esc(i.house ? houseLabel(i.house) : '—')}</td><td>${i.issues.map(esc).join('<br>')}</td></tr>`).join('')}
         </table>` : `<p class="none">None found.</p>`}
       </body></html>`;
 
@@ -2770,9 +3054,12 @@
 
   function isAdmin() { return !!session && session.user.role === 'admin'; }
   function isFaculty() { return !!session && session.user.role === 'faculty'; }
+  // Faculty account created as "all houses": sees and edits every house (like an admin), but cannot manage accounts.
+  function isAllFaculty() { return isFaculty() && session.user.house === 'ALL'; }
+  function isHouseFaculty() { return isFaculty() && session.user.house !== 'ALL'; }
   function canEdit(r) {
     if (!session || currentSource() !== 'scrutiny') return false; // original form responses are always read-only
-    return isAdmin() || normaliseHouse(r.house) === session.user.house;
+    return isAdmin() || isAllFaculty() || normaliseHouse(r.house) === session.user.house;
   }
 
   // Which data set is on screen?
@@ -3087,7 +3374,7 @@
     document.getElementById('status').style.display = 'none';
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    if (isFaculty()) activeHouse = session.user.house;
+    if (isHouseFaculty()) activeHouse = session.user.house;
     renderUserBar();
     renderHouseTabs();
     renderCards();
@@ -3110,6 +3397,13 @@
         return { eyebrow: TEXT_EYEBROW_PUBLIC, suffix: '· Scrutiny Done Registrations', sub: TEXT_PUBLIC_SCRUTINY_SUB };
       }
       return { eyebrow: TEXT_EYEBROW_PUBLIC, suffix: TEXT_SUFFIX_PUBLIC, sub: TEXT_PUBLIC_SUB };
+    }
+    if (isAllFaculty()) {
+      return {
+        eyebrow: 'Rhythm of Sapta Swaras · Faculty scrutiny desk',
+        suffix: '· All Houses Scrutiny',
+        sub: 'Scrutiny desk for all houses. Check registrations against the quota flags, correct details, remove events over the limit or delete duplicates. Changes are saved to the scrutiny sheet only — the original form responses are never modified.',
+      };
     }
     if (isFaculty()) {
       const house = houseLabel(session.user.house);
@@ -3238,8 +3532,8 @@
     if (!session) { renderPublicBar(); return; }
     const u = session.user;
     const bar = document.getElementById('userBar');
-    const scope = u.role === 'admin' ? 'Admin · all houses' : houseLabel(u.house) + ' faculty';
-    const dot = u.role === 'admin' ? '--maroon' : houseVar(u.house);
+    const scope = u.role === 'admin' ? 'Admin · all houses' : (u.house === 'ALL' ? 'Faculty · all houses' : houseLabel(u.house) + ' faculty');
+    const dot = (u.role === 'admin' || u.house === 'ALL') ? '--maroon' : houseVar(u.house);
     bar.innerHTML = `
       <span>Signed in as <span class="who">${escapeHtml(u.name || u.email)}</span></span>
       <span class="house-badge" style="--dot:var(${dot})"><span class="dot"></span>${escapeHtml(scope)}</span>
@@ -3294,7 +3588,7 @@
       });
       session = { token: data.token, user: data.user };
       saveSession();
-      activeHouse = isFaculty() ? session.user.house : 'ALL';
+      activeHouse = isHouseFaculty() ? session.user.house : 'ALL';
       document.getElementById('loginPassword').value = '';
       document.getElementById('loginGate').style.display = 'none';
       window.scrollTo(0, 0);
@@ -3692,7 +3986,7 @@
     m.innerHTML = `
       <div class="ed-head">
         <div><h2 id="facTitle">Manage faculty &amp; admins</h2>
-          <p>Faculty sign in and see only their own house. Admins (like the overall coordinator) see and edit everything and can manage these accounts.</p></div>
+          <p>Faculty sign in and see only their own house, unless created as "Faculty — all houses" (they see and edit every house but cannot manage accounts). Admins (like the overall coordinator) see and edit everything and can manage these accounts.</p></div>
         <button type="button" class="gl-close" data-fac="close" aria-label="Close">✕</button>
       </div>
       <div class="ed-body">
@@ -3704,6 +3998,7 @@
           <label class="fld">Role
             <select id="fac-role">
               <option value="faculty">Faculty — one house only</option>
+              <option value="facultyall">Faculty — all houses</option>
               <option value="admin">Admin — all houses</option>
             </select>
           </label>
@@ -3742,7 +4037,9 @@
         const isSelf = session && u.email === session.user.email;
         const access = u.role === 'admin'
           ? `<span class="house-badge" style="--dot:var(--maroon)"><span class="dot"></span>${u.owner ? 'Main admin' : 'Admin · all houses'}</span>`
-          : `<span class="house-badge" style="--dot:var(${houseVar(u.house)})"><span class="dot"></span>${escapeHtml(houseLabel(u.house))}</span>`;
+          : (u.house === 'ALL'
+            ? `<span class="house-badge" style="--dot:var(--maroon)"><span class="dot"></span>Faculty · all houses</span>`
+            : `<span class="house-badge" style="--dot:var(${houseVar(u.house)})"><span class="dot"></span>${escapeHtml(houseLabel(u.house))}</span>`);
         const actions = u.owner
           ? '<span class="muted-note">protected</span>'
           : `<button type="button" class="btn-mini" data-fac="edit" data-email="${escapeAttr(u.email)}">Edit</button>
@@ -3765,12 +4062,14 @@
   async function saveFaculty() {
     const errEl = document.getElementById('facError');
     errEl.textContent = '';
-    const role = document.getElementById('fac-role').value;
+    const roleSel = document.getElementById('fac-role').value;
+    const allFaculty = roleSel === 'facultyall';
+    const role = allFaculty ? 'faculty' : roleSel;
     const payload = {
       name: document.getElementById('fac-name').value.trim(),
       email: document.getElementById('fac-email').value.trim(),
       role,
-      house: role === 'admin' ? '' : document.getElementById('fac-house').value,
+      house: role === 'admin' ? '' : (allFaculty ? 'ALL' : document.getElementById('fac-house').value),
       password: document.getElementById('fac-pass').value,
     };
     if (!payload.name || !payload.email || (role === 'faculty' && !payload.house)) {
@@ -3813,8 +4112,8 @@
       if (!u) return;
       document.getElementById('fac-name').value = u.name;
       document.getElementById('fac-email').value = u.email;
-      document.getElementById('fac-role').value = u.role;
-      document.getElementById('fac-house').value = u.house;
+      document.getElementById('fac-role').value = (u.role === 'faculty' && u.house === 'ALL') ? 'facultyall' : u.role;
+      document.getElementById('fac-house').value = u.house === 'ALL' ? '' : u.house;
       syncFacRole();
       document.getElementById('fac-pass').value = '';
       document.getElementById('facNote').innerHTML = '';
@@ -3841,7 +4140,7 @@
   });
   // Admin accounts see every house, so the house menu doesn't apply to them.
   function syncFacRole() {
-    const admin = document.getElementById('fac-role').value === 'admin';
+    const admin = document.getElementById('fac-role').value !== 'faculty'; // admin and "faculty — all houses" need no house
     const h = document.getElementById('fac-house');
     h.disabled = admin;
     if (admin) h.value = '';
