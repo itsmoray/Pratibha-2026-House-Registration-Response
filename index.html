@@ -904,6 +904,8 @@
     border-top:1px solid var(--line);
   }
   .ed-events{display:flex; flex-direction:column; gap:0.85rem;}
+  .team-boxes{display:flex; flex-direction:column; gap:0.8rem;}
+  .team-boxes .team-hint{font-size:0.74rem; color:var(--muted); line-height:1.4;}
   .ed-event-row{display:flex; flex-direction:column; gap:0.4rem;}
   .ed-event-row .lbl{font-size:0.74rem; color:var(--muted);}
   .chips{display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center;}
@@ -1877,6 +1879,124 @@
     return Array.from(new Set(r.groupEvents.split(',').map(s => s.trim()).filter(Boolean)));
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  // Team events. Group events live in the "groupEvents" column, but the
+  // guidelines also make Rangoli, Collage and Mehendi team events (2 per
+  // team) and the form files those under fine arts. Every team event keeps
+  // its members in the one "groupMembers" column, so these helpers work out
+  // which part of that text belongs to which event. They only READ data —
+  // nothing here writes to the sheet.
+  //   • One team event  -> the whole text is that event's members.
+  //   • Several events  -> the text is split by heading lines such as
+  //     "Collage:" / "Collage making" / "Rangoli". If there are no headings
+  //     the list can't be split, so it is shown under each event (as before).
+  // ══════════════════════════════════════════════════════════════════
+  const TEAM_FINE_ART = /rangoli|collage|mehend|mehnd/i;
+  function isTeamFineArt(tag) { return TEAM_FINE_ART.test(String(tag || '')); }
+
+  // listOf(field) -> array of event names in that column
+  function teamEventTagsFrom(listOf) {
+    const out = [];
+    const add = t => { if (t && !out.includes(t)) out.push(t); };
+    listOf('groupEvents').forEach(add);
+    ['fineArtsEvent', 'individualEvents'].forEach(f => listOf(f).forEach(t => { if (isTeamFineArt(t)) add(t); }));
+    return out;
+  }
+  function teamEventTags(r) { return teamEventTagsFrom(f => splitList(r[f])); }
+
+  function teamWordKey(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+  // 2 = the line is exactly the event name, 1 = it clearly names the event, 0 = no match
+  function teamHeadingScore(head, tag) {
+    if (teamWordKey(head) === teamWordKey(tag)) return 2;
+    const H = head.toLowerCase(), T = String(tag).toLowerCase();
+    if (/rangoli/.test(T)) return /rangol/.test(H) ? 1 : 0;
+    if (/collage/.test(T)) return /coll?age/.test(H) ? 1 : 0;
+    if (/mehend|mehnd/.test(T)) return /meh[ae]?nd|henna/.test(H) ? 1 : 0;
+    if (/\bmime\b/.test(T)) return /\bmime\b/.test(H) ? 1 : 0;
+    if (/debate/.test(T)) return /debate/.test(H) ? 1 : 0;
+    if (/folk/.test(T)) return /folk/.test(H) ? 1 : 0;
+    if (/group\s*dance/.test(T)) return /dance/.test(H) && !/folk/.test(H) ? 1 : 0;
+    if (/group\s*song/.test(T)) {
+      if (/western/.test(T)) return /song|music|vocal/.test(H) && /western/.test(H) ? 1 : 0;
+      return /song|music|vocal/.test(H) && /indian/.test(H) ? 1 : 0;
+    }
+    return 0;
+  }
+
+  // Is this line a heading for one of the student's team events? -> { tag, rest } or null.
+  // Anything that could be a member's name (digits, commas, "Name - BCA") is never taken as a heading,
+  // so a wrong guess can only leave a heading line in the list, never drop a member.
+  function teamHeadingOf(line, tags) {
+    let s = String(line || '').trim();
+    if (!s) return null;
+    let rest = '';
+    const colon = s.indexOf(':');
+    if (colon > 0 && s.slice(colon + 1).trim()) { rest = s.slice(colon + 1).trim(); s = s.slice(0, colon); }
+    const head = s.replace(/^[\s#*=_\-–—\[\(]+|[\s:*=_\-–—\]\)]+$/g, '');
+    if (!head || head.length > 90) return null;
+    let best = null, bestScore = 0;
+    tags.forEach(t => { const sc = teamHeadingScore(head, t); if (sc > bestScore) { best = t; bestScore = sc; } });
+    if (!best) return null;
+    if (bestScore < 2) {
+      if (/[0-9,&]| [-–—] /.test(head.replace(/\([^)]*\)/g, ''))) return null;
+      if (head.split(/\s+/).length > 4) return null;
+    }
+    return { tag: best, rest };
+  }
+
+  // { tags, byTag: {eventName: membersText}, shared } — shared = several events but no headings,
+  // so the same list is given to each of them.
+  function teamMembersByEvent(r, tagsOverride) {
+    const tags = tagsOverride || teamEventTags(r);
+    const byTag = {};
+    if (!tags.length) return { tags, byTag, shared: false };
+    const text = String(r.groupMembers || '').replace(/\r/g, '');
+    const parts = {}; tags.forEach(t => { parts[t] = []; });
+    const unlabelled = [];
+    let cur = null, sawHeading = false;
+    text.split('\n').forEach(line => {
+      const h = teamHeadingOf(line, tags);
+      if (h) { cur = h.tag; sawHeading = true; if (h.rest) parts[cur].push(h.rest); return; }
+      (cur ? parts[cur] : unlabelled).push(line);
+    });
+    const join = lines => lines.join('\n').trim();
+    let shared = false;
+    if (tags.length === 1) {
+      byTag[tags[0]] = join(unlabelled.concat(parts[tags[0]]));
+    } else if (!sawHeading) {
+      shared = !!text.trim();
+      tags.forEach(t => { byTag[t] = text.trim(); });
+    } else {
+      const empty = tags.filter(t => !join(parts[t]));
+      const takers = empty.length ? empty : [tags[0]];   // unlabelled lines go to events with no section of their own
+      tags.forEach(t => { byTag[t] = join(parts[t]); });
+      if (join(unlabelled)) takers.forEach(t => { byTag[t] = join(unlabelled.concat(parts[t])); });
+    }
+    return { tags, byTag, shared };
+  }
+
+  // Members text for one event of a record ('' when none).
+  function teamMembersFor(r, tag) {
+    const m = teamMembersByEvent(r);
+    return m.byTag[tag] !== undefined ? m.byTag[tag] : String(r.groupMembers || '').trim();
+  }
+
+  // Same, for the Excel report: says so when one list could not be split between several events.
+  function teamMembersForExport(r, tag) {
+    const m = teamMembersByEvent(r);
+    const txt = m.byTag[tag] !== undefined ? m.byTag[tag] : String(r.groupMembers || '').trim();
+    return (m.shared && txt) ? '[shared list - not split by event] ' + txt : txt;
+  }
+
+  // Text to store in the groupMembers column. One event: just the names (same as always).
+  // Several events: a "Event name:" heading before each event's names.
+  function composeTeamMembers(tags, byTag) {
+    const parts = tags.map(t => ({ t, s: String(byTag[t] || '').trim() })).filter(p => p.s);
+    if (tags.length <= 1) return parts.length ? parts[0].s : '';
+    return parts.map(p => p.t + ':\n' + p.s).join('\n\n');
+  }
+
   // Every capped-or-not event tag a record carries, each flagged as
   // group or individual (they never overlap in name).
   function collectAllEventEntries(r) {
@@ -2162,7 +2282,11 @@
 
       const groups = collectStageEntries(r).filter(e => e.isGroup);
       if (!groups.length) return;
-      const members = parseTeamMembers(r.groupMembers);
+      // each group event reads its own part of the members text (same as before when the student has just one team event)
+      const members = [], seenMembers = new Set();
+      groups.forEach(g => parseTeamMembers(teamMembersFor(r, g.tag)).forEach(m => {
+        if (!seenMembers.has(m.key)) { seenMembers.add(m.key); members.push(m); }
+      }));
       const tagList = groups.map(g => g.tag).join(', ');
       if (!members.length) {
         addIssue(r, 'Group event registered (' + tagList + ') but no team members are listed');
@@ -2788,8 +2912,9 @@
     const baseHeaders = ['No.', 'Name', 'Reg. Number', 'Batch', 'Programme', 'Gender', 'WhatsApp', 'Registered At'];
     if (showHouse) baseHeaders.push('House');
     const baseW = baseHeaders.length;
-    const hasGroup = events.some(e => e.isGroup);
-    const totalW = baseW + (hasGroup ? 1 : 0); // last column = team members (group events only)
+    const isTeamEv = e => e.isGroup || isTeamFineArt(e.tag); // group events + Rangoli / Collage / Mehendi
+    const hasGroup = events.some(isTeamEv);
+    const totalW = baseW + (hasGroup ? 1 : 0); // last column = team members (team events only)
 
     const aoa = [];
     const meta = [];
@@ -2820,18 +2945,18 @@
       info += limit ? '   |   Limit: max ' + limit.max + ' ' + limit.unit + ' per house' : '   |   No per-house limit';
       if (over) info += '   |   OVER LIMIT';
 
-      addFullWidth(ev.tag + (ev.isGroup ? '   (Group event)' : ''), 'banner');
+      addFullWidth(ev.tag + (ev.isGroup ? '   (Group event)' : (isTeamEv(ev) ? '   (Team event)' : '')), 'banner');
       addFullWidth(info, over ? 'infoOver' : 'info');
 
-      const width = ev.isGroup ? totalW : baseW;
+      const width = isTeamEv(ev) ? totalW : baseW;
       const headers = baseHeaders.slice();
-      if (ev.isGroup) { headers[1] = 'Team Leader'; headers.push('Team Members'); }
+      if (isTeamEv(ev)) { headers[1] = 'Team Leader'; headers.push('Team Members'); }
       add(headers, 'header', { width });
 
       recs.forEach((r, i) => {
         const cells = [i + 1, r.name || '', r.regNumber || '', r.batch || '', r.programme || '', r.gender || '', r.whatsapp || '', exportTimestamp(r.timestamp)];
         if (showHouse) cells.push(houseLabel(normaliseHouse(r.house)));
-        if (ev.isGroup) cells.push((r.groupMembers || '').trim());
+        if (isTeamEv(ev)) cells.push(teamMembersForExport(r, ev.tag));
         add(cells, 'data', { width, idx: i });
       });
       add([], 'blank');
@@ -3783,9 +3908,7 @@
             </label>`).join('')}
         </div>
 
-        <label class="fld">Group members
-          <textarea id="ed-groupMembers" maxlength="2000">${escapeHtml(r.groupMembers || '')}</textarea>
-        </label>
+        <div class="team-boxes" id="teamBoxes"></div>
       </div>
       <div class="ed-foot">
         <div class="ed-error" id="edError" role="alert"></div>
@@ -3794,10 +3917,49 @@
         <button type="button" class="btn-primary" data-ed="save" id="edSaveBtn">Save changes</button>
       </div>`;
     EDIT_LIST_FIELDS.forEach(([f]) => renderChips(f));
+    // Team members: read the saved text once, per team event, so the boxes below show each event's own members
+    const origTags = teamEventTags(r);
+    const mapped = teamMembersByEvent(r, origTags);
+    editorState.gm = { raw: String(r.groupMembers || ''), byTag: Object.assign({}, mapped.byTag), origTags, origComposed: composeTeamMembers(origTags, mapped.byTag) };
+    renderTeamBoxes();
     document.getElementById('editOverlay').classList.add('open');
     syncScrollLock();
     const first = document.getElementById('ed-name');
     if (first) first.focus();
+  }
+
+  // Keep what has been typed in the team member boxes before they are redrawn or saved.
+  function captureTeamBoxes() {
+    if (!editorState || !editorState.gm) return;
+    const gm = editorState.gm;
+    const raw = document.getElementById('ed-groupMembers');
+    if (raw) gm.raw = raw.value;
+    document.querySelectorAll('#teamBoxes textarea[data-team]').forEach(ta => { gm.byTag[ta.dataset.team] = ta.value; });
+  }
+
+  // One members box per team event the student is registered for (group events, Rangoli, Collage, Mehendi).
+  // With no team event there is a single plain "Group members" box, as before.
+  function renderTeamBoxes() {
+    const box = document.getElementById('teamBoxes');
+    if (!box || !editorState || !editorState.gm) return;
+    captureTeamBoxes();
+    const gm = editorState.gm;
+    const tags = teamEventTagsFrom(f => editorState.lists[f] || []);
+    if (!tags.length) {
+      box.innerHTML = `<label class="fld">Group members
+        <textarea id="ed-groupMembers" maxlength="2000">${escapeHtml(gm.raw)}</textarea>
+      </label>`;
+      return;
+    }
+    box.innerHTML = (tags.length > 1
+        ? '<div class="team-hint">This student has several team events — list the members of each event in its own box.</div>'
+        : '')
+      + tags.map(t => {
+        const seed = gm.byTag[t] !== undefined ? gm.byTag[t] : (tags.length === 1 ? gm.raw.trim() : '');
+        return `<label class="fld">Team members — ${escapeHtml(t)}
+          <textarea data-team="${escapeAttr(t)}" maxlength="2000">${escapeHtml(seed)}</textarea>
+        </label>`;
+      }).join('');
   }
 
   function renderChips(field) {
@@ -3830,8 +3992,14 @@
       const v = val('ed-' + f).trim();
       if (v !== (r[f] || '').trim()) changes[f] = v;
     });
-    const gm = val('ed-groupMembers').trim();
-    if (gm !== (r.groupMembers || '').trim()) changes.groupMembers = gm;
+    captureTeamBoxes();
+    const tagsNow = teamEventTagsFrom(f => editorState.lists[f] || []);
+    const gm = tagsNow.length ? composeTeamMembers(tagsNow, editorState.gm.byTag) : String(editorState.gm.raw || '').trim();
+    const teamUntouched = tagsNow.join('\u0001') === editorState.gm.origTags.join('\u0001') && gm === editorState.gm.origComposed;
+    if (!teamUntouched && gm !== (r.groupMembers || '').trim()) {
+      if (gm.length > 2000) { errEl.textContent = 'The team members text is too long (2000 characters in total, including the event headings).'; return; }
+      changes.groupMembers = gm;
+    }
     if (val('ed-gender') !== (r.gender || '').trim()) changes.gender = val('ed-gender');
     EDIT_LIST_FIELDS.forEach(([f]) => {
       const now = editorState.lists[f];
@@ -3950,6 +4118,7 @@
     else if (what === 'rm') {
       editorState.lists[b.dataset.f].splice(Number(b.dataset.i), 1);
       renderChips(b.dataset.f);
+      renderTeamBoxes();
     } else if (what === 'delete') {
       if (editorState.saving) return;
       const r = editorState.r;
@@ -3962,6 +4131,7 @@
     const f = sel.dataset.field;
     if (!editorState.lists[f].includes(sel.value)) editorState.lists[f].push(sel.value);
     renderChips(f);
+    renderTeamBoxes();
   });
 
   // ── Faculty management (admin) ──────────────────────────────────
