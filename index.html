@@ -1071,9 +1071,10 @@
   .splash-logo{
     position:absolute;
     inset:0;
-    padding:6px;
-    border-radius:16px;
-    border:2px solid var(--accent);
+    padding:12%; /* keeps the whole artwork inside the circle */
+    background-color:#f0e6d4; /* same parchment tone as the logo's own edge, so no square shows inside the circle */
+    border-radius:50%;
+    border:3px solid var(--accent);
     box-shadow:0 10px 36px rgba(0,0,0,0.45);
     animation:splashBreathe 3.2s ease-in-out .8s infinite;
   }
