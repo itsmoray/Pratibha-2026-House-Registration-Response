@@ -2064,7 +2064,7 @@
     if (/^MASANSKRIT/.test(c)) return 'MASANSKRIT';
     if (/^BSC(AP|APPLIED)/.test(c)) return 'BSCAP';
     if (/^MSC(AP|APPLIED)/.test(c)) return 'MSCAP';
-    if (/^MSCCP/.test(c)) return 'MSCCP';
+    if (/^MSC(CP|COUNSEL)/.test(c)) return 'MSCCP';
     if (/^BSC(CS|COMPUTER)/.test(c)) return 'BSCCS';
     if (/^BTECH/.test(c)) {
       const rest = c.slice(5);
@@ -2076,10 +2076,11 @@
       if (/^(CY|CYBER)/.test(rest)) return 'CY';
       return null;
     }
-    if (/^BBA/.test(c)) return 'BBA';
-    if (/^BCA/.test(c)) return 'BCA';
-    if (/^BCOM/.test(c)) return 'BCOM';
-    if (/^MBA/.test(c)) return 'MBA';
+    // short codes and the full names the form uses (e.g. "Bachelor of Computer Application (BCA)")
+    if (/^(BBA|BACHELOROFBUSINESSADMINISTRATION)/.test(c)) return 'BBA';
+    if (/^(BCA|BACHELOROFCOMPUTERAPPLICATION)/.test(c)) return 'BCA';
+    if (/^(BCOM|BACHELOROFCOMMERCE)/.test(c)) return 'BCOM';
+    if (/^(MBA|MASTEROFBUSINESSADMINISTRATION)/.test(c)) return 'MBA';
     return null;
   }
 
@@ -2113,18 +2114,26 @@
 
   function normPerson(s) { return String(s || '').toLowerCase().replace(/[^\p{L}]/gu, ''); }
 
-  // The team leader types the other members' names in one box — split it into names.
+  // The team leader types the other members in one box. One member per line (numbered or not) is the
+  // normal case and a line may contain commas ("Khushi Sharma, DA Sanskrit S3"), so a multi-line box is
+  // read line by line. Only a single-line box is split on commas / ; / & / "and".
   function parseTeamMembers(text) {
+    const src = String(text || '').replace(/\r/g, '');
+    const lines = src.split('\n').map(l => l.trim()).filter(Boolean);
+    let segs;
+    if (lines.length > 1) segs = lines;
+    else if ((src.match(/(?:^|\s)\d+\s*[.)]\s+\S/g) || []).length > 1) segs = src.split(/(?:^|\s)\d+\s*[.)]\s+/);
+    else segs = src.split(/[;,&]+|\band\b/i);
     const out = [], seen = new Set();
-    String(text || '').split(/[\n\r;,&]+|\band\b/i).forEach(seg => {
+    segs.forEach(seg => {
       const s = seg
         .replace(/^\s*(\d+\s*[.)\-:]|[-•*·])\s*/, '')
         .replace(/^\s*(team\s*)?(members?|names?)\s*[:\-–]\s*/i, '')
         .replace(/\([^)]*\)/g, ' ')
         .replace(/[0-9_\/\\|:+]+/g, ' ')
         .replace(/\s+/g, ' ').trim();
-      const key = normPerson(s);
-      if (key.length >= 3 && !seen.has(key)) { seen.add(key); out.push({ raw: s, key }); }
+      const key = normPerson(s.split(',')[0]);   // the name is what comes before any comma
+      if (key.length >= 3 && !seen.has(key)) { seen.add(key); out.push({ raw: s, key, line: s }); }
     });
     return out;
   }
@@ -2164,7 +2173,7 @@
         const me = normPerson(r.name);
         const reg = String(r.regNumber || '').trim();
         const leaderListed = (reg && String(r.groupMembers || '').includes(reg)) ||
-          (me.length >= 3 && members.some(m => m.key === me || m.key.includes(me) || me.includes(m.key)));
+          (me.length >= 3 && members.some(m => m.key === me || m.key.includes(me) || me.includes(m.key) || normPerson(m.line).includes(me)));
         const lo = members.length, hi = members.length + (leaderListed ? 0 : 1);
         const want = size.min === size.max ? String(size.min) : size.min + '–' + size.max;
         if (hi < size.min) addIssue(r, groups[0].tag + ': only ' + members.length + ' name' + (members.length === 1 ? '' : 's') + ' listed' + (leaderListed ? '' : ' (plus the leader)') + ' — team needs ' + want + ' members');
