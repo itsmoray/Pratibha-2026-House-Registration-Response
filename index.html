@@ -2315,6 +2315,7 @@
         for (let j = i + 1; j < list.length; j++) {
           const a = list[i], b = list[j];
           if (a.r === b.r) continue;
+          if (a.house !== b.house) continue;   // a student belongs to one house only, so cross-house name matches aren't real duplicates
           const shared = [];
           const aKey = normPerson(a.r.name), bKey = normPerson(b.r.name);
           if (aKey.length >= 3 && b.single && b.members.some(m => m.key === aKey)) shared.push(a.r.name);
@@ -2890,6 +2891,12 @@
       .sort((a, b) => (a.t === b.t ? a.i - b.i : (a.t < b.t ? -1 : 1)))
       .map(x => x.r);
     const houseRank = key => { const i = HOUSES.findIndex(h => h.key === key); return i === -1 ? 99 : i; };
+    // When "All houses" is selected, group each event's rows by house (in the standard house
+    // order) first, then first-come-first-served within that house.
+    const byHouseThenTime = list => list
+      .map((r, i) => ({ r, i, t: timeOf(r), h: houseRank(normaliseHouse(r.house)) }))
+      .sort((a, b) => (a.h !== b.h ? a.h - b.h : (a.t === b.t ? a.i - b.i : (a.t < b.t ? -1 : 1))))
+      .map(x => x.r);
 
     // One block per event (an event name is never both individual and group, but key on both to be safe).
     const blocks = {};
@@ -2928,12 +2935,13 @@
     const houseName = houseFilter === 'ALL' ? 'All houses' : houseLabel(houseFilter);
     addFullWidth('Pratibha 2026-27 — Event-wise Registrations', 'title');
     addFullWidth('Scrutiny done registrations  ·  House: ' + houseName + '  ·  Generated ' + new Date().toLocaleString(), 'sub');
-    addFullWidth(events.length + (events.length === 1 ? ' event' : ' events') + '  ·  ' + entryCount + ' event registrations  ·  Each event is listed in order of registration time (first come, first served)' +
+    addFullWidth(events.length + (events.length === 1 ? ' event' : ' events') + '  ·  ' + entryCount + ' event registrations  ·  ' +
+      (showHouse ? 'Each event is grouped by house, then listed in order of registration time (first come, first served) within the house' : 'Each event is listed in order of registration time (first come, first served)') +
       (q ? '  ·  Filtered by search: "' + q + '"' : ''), 'sub');
     add([], 'blank');
 
     events.forEach(ev => {
-      const recs = byRegistrationTime(ev.records);
+      const recs = showHouse ? byHouseThenTime(ev.records) : byRegistrationTime(ev.records);
       const limit = EVENT_LIMITS[ev.tag];
       const perHouse = {};
       recs.forEach(r => { const h = normaliseHouse(r.house); perHouse[h] = (perHouse[h] || 0) + 1; });
@@ -4360,4 +4368,3 @@
 
 </body>
 </html>
-
